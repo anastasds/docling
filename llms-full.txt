@@ -1,0 +1,5522 @@
+# Docling
+
+Docling parses documents and exports them to the desired format with ease and speed.
+
+## Features
+
+- 🗂️ Reads popular document formats (PDF, DOCX, PPTX, XLSX, Images, HTML, AsciiDoc & Markdown) and exports to HTML, Markdown and JSON (with embedded and referenced images)
+- 📑 Advanced PDF document understanding incl. page layout, reading order & table structures
+- 🧩 Unified, expressive DoclingDocument representation format
+- 🤖 Plug-and-play integrations incl. LangChain, LlamaIndex, Crew AI & Haystack for agentic AI
+- 🔍 OCR support for scanned PDFs
+- 💻 Simple and convenient CLI
+
+### Coming soon
+
+- ♾️ Equation & code extraction
+- 📝 Metadata extraction, including title, authors, references & language
+
+## Get started
+
+## IBM ❤️ Open Source AI
+
+Docling has been brought to you by IBM.
+
+# 404 - Not found
+
+# Docling v2
+
+## What's new
+
+Docling v2 introduces several new features:
+
+- Understands and converts PDF, MS Word, MS Powerpoint, HTML and several image formats
+- Produces a new, universal document representation which can encapsulate document hierarchy
+- Comes with a fresh new API and CLI
+
+## Changes in Docling v2
+
+### CLI
+
+We updated the command line syntax of Docling v2 to support many formats. Examples are seen below.
+# Convert a single file to Markdown (default)
+docling myfile.pdf
+
+# Convert a single file to Markdown and JSON, without OCR
+docling myfile.pdf --to json --to md --no-ocr
+
+# Convert PDF files in input directory to Markdown (default)
+docling ./input/dir --from pdf
+
+# Convert PDF and Word files in input directory to Markdown and JSON
+docling ./input/dir --from pdf --from docx --to md --to json --output ./scratch
+
+# Convert all supported files in input directory to Markdown, but abort on first error
+docling ./input/dir --output ./scratch --abort-on-error
+
+Notable changes from Docling v1:
+
+- The standalone switches for different export formats are removed, and replaced with --from and --to arguments, to define input and output formats respectively.
+- The new --abort-on-error will abort any batch conversion as soon an error is encountered
+- The --backend option for PDFs was removed
+
+### Setting up a DocumentConverter
+
+To accomodate many input formats, we changed the way you need to set up your DocumentConverter object.
+You can now define a list of allowed formats on the DocumentConverter initialization, and specify custom options
+per-format if desired. By default, all supported formats are allowed. If you don't provide format\_options, defaults
+will be used for all allowed\_formats.
+
+Format options can include the pipeline class to use, the options to provide to the pipeline, and the document backend.
+They are provided as format-specific types, such as PdfFormatOption or WordFormatOption, as seen below.
+
+Note: If you work only with defaults, all remains the same as in Docling v1.
+
+More options are shown in the following example units:
+
+- run\_with\_formats.py
+- custom\_convert.py
+
+### Converting documents
+
+We have simplified the way you can feed input to the DocumentConverter and renamed the conversion methods for
+better semantics. You can now call the conversion directly with a single file, or a list of input files,
+or DocumentStream objects, without constructing a DocumentConversionInput object first.
+
+- DocumentConverter.convert now converts a single file input (previously DocumentConverter.convert\_single).
+- DocumentConverter.convert\_all now converts many files at once (previously DocumentConverter.convert).
+
+...
+from docling.datamodel.document import ConversionResult
+## Convert a single file (from URL or local path)
+conv\_result: ConversionResult = doc\_converter.convert("https://arxiv.org/pdf/2408.09869") # previously `convert\_single`
+
+## Convert several files at once:
+
+input\_files = [
+    "tests/data/wiki\_duck.html",
+    "tests/data/word\_sample.docx",
+    "tests/data/lorem\_ipsum.docx",
+    "tests/data/powerpoint\_sample.pptx",
+    "tests/data/2305.03393v1-pg9-img.png",
+    "tests/data/2206.01062.pdf",
+]
+
+# Directly pass list of files or streams to `convert\_all`
+conv\_results\_iter = doc\_converter.convert\_all(input\_files) # previously `convert`
+
+Through the raises\_on\_error argument, you can also control if the conversion should raise exceptions when first
+encountering a problem, or resiliently convert all files first and reflect errors in each file's conversion status.
+By default, any error is immediately raised and the conversion aborts (previously, exceptions were swallowed).
+
+### Access document structures
+
+We have simplified how you can access and export the converted document data, too. Our universal document representation
+is now available in conversion results as a DoclingDocument object.
+DoclingDocument provides a neat set of APIs to construct, iterate and export content in the document, as shown below.
+
+Note: While it is deprecated, you can still work with the Docling v1 document representation, it is available as:
+conv\_result.legacy\_document # provides the representation in previous ExportedCCSDocument type
+
+### Export into JSON, Markdown, Doctags
+
+Note: All render\_... methods in ConversionResult have been removed in Docling v2,
+and are now available on DoclingDocument as:
+
+- DoclingDocument.export\_to\_dict
+- DoclingDocument.export\_to\_markdown
+- DoclingDocument.export\_to\_document\_tokens
+
+Note: While it is deprecated, you can still export Docling v1 JSON format. This is available through the same
+methods as on the DoclingDocument type:
+## Export legacy document representation to desired format, for v1 compatibility:
+print(json.dumps(conv\_res.legacy\_document.export\_to\_dict()))
+print(conv\_res.legacy\_document.export\_to\_markdown())
+print(conv\_res.legacy\_document.export\_to\_document\_tokens())
+
+### Reload a DoclingDocument stored as JSON
+
+You can save and reload a DoclingDocument to disk in JSON format using the following codes:
+
+### Chunking
+
+Docling v2 defines new base classes for chunking:
+
+- BaseMeta for chunk metadata
+- BaseChunk containing the chunk text and metadata, and
+- BaseChunker for chunkers, producing chunks out of a DoclingDocument.
+
+Additionally, it provides an updated HierarchicalChunker implementation, which
+leverages the new DoclingDocument and provides a new, richer chunk output format, including:
+
+- the respective doc items for grounding
+- any applicable headings for context
+- any applicable captions for context
+
+For an example, check out Chunking usage.
+
+🎉 Docling has gone v2! Check out what's new and how to get started!
+
+# FAQ
+
+This is a collection of FAQ collected from the user questions on https://github.com/DS4SD/docling/discussions.
+
+### Is Python 3.13 supported?
+
+Full support for Python 3.13 is currently waiting for pytorch.
+
+At the moment, no release has full support, but nightly builds are available. Docling was tested on Python 3.13 with the following steps:
+
+Note: we are disabling OCR since easyocr and the nightly torch builds have some conflicts.
+
+Source: Issue #136
+
+### Install conflicts with numpy (python 3.13)
+
+When using docling-ibm-models>=2.0.7 and deepsearch-glm>=0.26.2 these issues should not show up anymore.
+Docling supports numpy versions >=1.24.4,<3.0.0 which should match all usages.
+
+For older versions
+
+This has been observed installing docling and langchain via poetry.
+
+Numpy is only adding Python 3.13 support starting in some 2.x.y version. In order to prepare for 3.13, Docling depends on a 2.x.y for 3.13, otherwise depending an 1.x.y version. If you are allowing 3.13 in your pyproject.toml, Poetry will try to find some way to reconcile Docling's numpy version for 3.13 (some 2.x.y) with LangChain's version for that (some 1.x.y) — leading to the error above.
+
+Check if Python 3.13 is among the Python versions allowed by your pyproject.toml and if so, remove it and try again.
+E.g., if you have python = "^3.10", use python = ">=3.10,<3.13" instead.
+
+If you want to retain compatibility with python 3.9-3.13, you can also use a selector in pyproject.toml similar to the following
+
+Source: Issue #283
+
+### Are text styles (bold, underline, etc) supported?
+
+Currently text styles are not supported in the DoclingDocument format.
+If you are interest in contributing this feature, please open a discussion topic to brainstorm on the design.
+
+Note: this is not a simple topic
+
+### How do I run completely offline?
+
+Docling is not using any remote service, hence it can run in completely isolated air-gapped environments.
+
+The only requirement is pointing the Docling runtime to the location where the model artifacts have been stored.
+
+For example
+
+Source: Issue #326
+
+### Which model weights are needed to run Docling?
+
+Model weights are needed for the AI models used in the PDF pipeline. Other document types (docx, pptx, etc) do not have any such requirement.
+
+For processing PDF documents, Docling requires the model weights from https://huggingface.co/ds4sd/docling-models.
+
+When OCR is enabled, some engines also require model artifacts. For example EasyOCR, for which Docling has special pipeline options to control the runtime behavior.
+
+### SSL error downloading model weights
+
+Similar SSL download errors have been observed by some users. This happens when model weights are fetched from Hugging Face.
+The error could happen when the python environment doesn't have an up-to-date list of trusted certificates.
+
+Possible solutions were
+
+- Update to the latest version of certifi, i.e. pip install --upgrade certifi
+- Use pip-system-certs to use the latest trusted certificates on your system.
+
+### Which OCR languages are supported?
+
+Docling supports multiple OCR engine, each one has its own list of supported languages.
+Here is a collection of links to the original OCR engine's documentation listing the OCR languages.
+
+- EasyOCR
+- Tesseract
+- RapidOCR
+- Mac OCR
+
+Setting the OCR language in Docling is done via the OCR pipeline options:
+
+# Concepts
+
+Use the navigation on the left to browse through some core Docling concepts.
+
+# Integrations
+
+Use the navigation on the left to browse through Docling integrations with popular frameworks and tools.
+
+# Installation
+
+To use Docling, simply install docling from your Python package manager, e.g. pip:
+pip install docling
+
+Works on macOS, Linux, and Windows, with support for both x86\_64 and arm64 architectures.
+
+The Docling models depend on the PyTorch library.
+Depending on your architecture, you might want to use a different distribution of torch.
+For example, you might want support for different accelerator or for a cpu-only version.
+All the different ways for installing torch are listed on their website https://pytorch.org/.
+
+One common situation is the installation on Linux systems with cpu-only support.
+In this case, we suggest the installation of Docling with the following options
+
+Docling supports multiple OCR engines for processing scanned documents. The current version provides
+the following engines.
+
+| Engine        | Installation                                                                                                     | Usage                  |
+|---------------|------------------------------------------------------------------------------------------------------------------|------------------------|
+| EasyOCR       | Default in Docling or via pip install easyocr.                                                                   | EasyOcrOptions         |
+| Tesseract     | System dependency. See description for Tesseract and Tesserocr below.                                            | TesseractOcrOptions    |
+| Tesseract CLI | System dependency. See description below.                                                                        | TesseractCliOcrOptions |
+| OcrMac        | System dependency. See description below.                                                                        | OcrMacOptions          |
+| RapidOCR      | Extra feature not included in Default Docling installation can be installed via pip install rapidocr\_onnxruntime | RapidOcrOptions        |
+
+The Docling DocumentConverter allows to choose the OCR engine with the ocr\_options settings. For example
+
+Tesseract installation
+
+Tesseract is a popular OCR engine which is available
+on most operating systems. For using this engine with Docling, Tesseract must be installed on your
+system, using the packaging tool of your choice. Below we provide example commands.
+After installing Tesseract you are expected to provide the path to its language files using the
+TESSDATA\_PREFIX environment variable (note that it must terminate with a slash /).
+
+Linking to Tesseract
+The most efficient usage of the Tesseract library is via linking. Docling is using
+the Tesserocr package for this.
+
+If you get into installation issues of Tesserocr, we suggest using the following
+installation options:
+
+ocrmac installation
+
+ocrmac is using
+Apple's vision(or livetext) framework as OCR backend.
+For using this engine with Docling, ocrmac must be installed on your system.
+This only works on macOS systems with newer macOS versions (10.15+).
+
+## Development setup
+
+To develop Docling features, bugfixes etc., install as follows from your local clone's root dir:
+
+# Examples
+
+Use the navigation on the left to browse through examples covering a range of possible workflows and use cases.
+
+# Usage
+
+## Conversion
+
+### Convert a single document
+
+To convert individual PDF documents, use convert(), for example:
+
+### CLI
+
+You can also use Docling directly from your command line to convert individual files —be it local or by URL— or whole directories.
+
+A simple example would look like this:
+docling https://arxiv.org/pdf/2206.01062
+
+To see all available options (export formats etc.) run docling --help. More details in the CLI reference page.
+
+### Supported formats
+
+The document conversion in Docling supports several popular formats, including:
+
+- PDF (Portable Document Format): the format developed by Adobe to present documents compatible across application software, hardware, and operating systems.
+- .docx, .xlsx, .pptx (Word, Excel, and PowerPoint): the Open XML formats suppored by Microsof Office.
+- Markdown:  a lightweight markup language to add formatting elements to plain text documents.
+- AsciiDoc: a plain text markup language for writing technical content.
+- HTML (Hypertext Markup Language): the standard markup language for creating web pages.
+- XHTML (Extensible Hypertext Markup Language): the XML-based version of HTML.
+- XML (Extensible Markup Language): a markup format for storing and transmitting data. Due to its flexibility, Docling requires custom implementations to identify the
+semantics of the data. Currently, Docling supports the parsing of USPTO patents and PubMed Central® (PMC) articles.
+
+### Advanced options
+
+#### Adjust pipeline features
+
+The example file custom\_convert.py contains multiple ways
+one can adjust the conversion pipeline and features.
+
+##### Control PDF table extraction options
+
+You can control if table structure recognition should map the recognized structure back to PDF cells (default) or use text cells from the structure prediction itself.
+This can improve output quality if you find that multiple columns in extracted tables are erroneously merged into one.
+
+Since docling 1.16.0: You can control which TableFormer mode you want to use. Choose between TableFormerMode.FAST (default) and TableFormerMode.ACCURATE (better, but slower) to receive better quality with difficult table structures.
+
+##### Provide specific artifacts path
+
+By default, artifacts such as models are downloaded automatically upon first usage. If you would prefer to use a local path where the artifacts have been explicitly prefetched, you can do that as follows:
+
+#### Impose limits on the document size
+
+You can limit the file size and number of pages which should be allowed to process per document:
+
+#### Convert from binary PDF streams
+
+You can convert PDFs from a binary stream instead of from the filesystem as follows:
+
+#### Limit resource usage
+
+You can limit the CPU threads used by Docling by setting the environment variable OMP\_NUM\_THREADS accordingly. The default setting is using 4 CPU threads.
+
+#### Use specific backend converters
+
+By default, Docling will try to identify the document format to apply the appropriate conversion backend (see the list of supported formats).
+You can restrict the DocumentConverter to a set of allowed document formats, as shown in the Multi-format conversion example.
+Alternatively, you can also use the specific backend that matches your document content. For instance, you can use HTMLDocumentBackend for HTML pages:
+
+## Chunking
+
+You can chunk a Docling document using a chunker, such as a
+HybridChunker, as shown below (for more details check out
+this example):
+
+An example chunk would look like this:
+
+# CLI reference
+
+This page provides documentation for our command line tools.
+
+# docling
+
+Usage:
+
+Options:
+
+| Name                                                   | Type                                                                                                     | Description                                                                                                                                                                                                                                                                                                                      | Default                |
+|--------------------------------------------------------|----------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------|
+| --from                                                 | choice (docx | pptx | html | xml\_pubmed | image | pdf | asciidoc | md | xlsx | xml\_uspto | json\_docling) | Specify input formats to convert from. Defaults to all formats.                                                                                                                                                                                                                                                                  | None                   |
+| --to                                                   | choice (md | json | html | text | doctags)                                                               | Specify output formats. Defaults to Markdown.                                                                                                                                                                                                                                                                                    | None                   |
+| --headers                                              | text                                                                                                     | Specify http request headers used when fetching url input sources in the form of a JSON string                                                                                                                                                                                                                                   | None                   |
+| --image-export-mode                                    | choice (placeholder | embedded | referenced)                                                             | Image export mode for the document (only in case of JSON, Markdown or HTML). With placeholder, only the position of the image is marked in the output. In embedded mode, the image is embedded as base64 encoded string. In referenced mode, the image is exported in PNG format and referenced from the main exported document. | ImageRefMode.EMBEDDED  |
+| --ocr / --no-ocr                                       | boolean                                                                                                  | If enabled, the bitmap content will be processed using OCR.                                                                                                                                                                                                                                                                      | True                   |
+| --force-ocr / --no-force-ocr                           | boolean                                                                                                  | Replace any existing text with OCR generated text over the full content.                                                                                                                                                                                                                                                         | False                  |
+| --ocr-engine                                           | choice (easyocr | tesseract\_cli | tesseract | ocrmac | rapidocr)                                         | The OCR engine to use.                                                                                                                                                                                                                                                                                                           | OcrEngine.EASYOCR      |
+| --ocr-lang                                             | text                                                                                                     | Provide a comma-separated list of languages used by the OCR engine. Note that each OCR engine has different values for the language names.                                                                                                                                                                                       | None                   |
+| --pdf-backend                                          | choice (pypdfium2 | dlparse\_v1 | dlparse\_v2)                                                             | The PDF backend to use.                                                                                                                                                                                                                                                                                                          | PdfBackend.DLPARSE\_V2  |
+| --table-mode                                           | choice (fast | accurate)                                                                                 | The mode to use in the table structure model.                                                                                                                                                                                                                                                                                    | TableFormerMode.FAST   |
+| --artifacts-path                                       | path                                                                                                     | If provided, the location of the model artifacts.                                                                                                                                                                                                                                                                                | None                   |
+| --abort-on-error / --no-abort-on-error                 | boolean                                                                                                  | If enabled, the bitmap content will be processed using OCR.                                                                                                                                                                                                                                                                      | False                  |
+| --output                                               | path                                                                                                     | Output directory where results are saved.                                                                                                                                                                                                                                                                                        | .                      |
+| --verbose, -v                                          | integer                                                                                                  | Set the verbosity level. -v for info logging, -vv for debug logging.                                                                                                                                                                                                                                                             | 0                      |
+| --debug-visualize-cells / --no-debug-visualize-cells   | boolean                                                                                                  | Enable debug output which visualizes the PDF cells                                                                                                                                                                                                                                                                               | False                  |
+| --debug-visualize-ocr / --no-debug-visualize-ocr       | boolean                                                                                                  | Enable debug output which visualizes the OCR cells                                                                                                                                                                                                                                                                               | False                  |
+| --debug-visualize-layout / --no-debug-visualize-layout | boolean                                                                                                  | Enable debug output which visualizes the layour clusters                                                                                                                                                                                                                                                                         | False                  |
+| --debug-visualize-tables / --no-debug-visualize-tables | boolean                                                                                                  | Enable debug output which visualizes the table cells                                                                                                                                                                                                                                                                             | False                  |
+| --version                                              | boolean                                                                                                  | Show version information.                                                                                                                                                                                                                                                                                                        | None                   |
+| --document-timeout                                     | float                                                                                                    | The timeout for processing each document, in seconds.                                                                                                                                                                                                                                                                            | None                   |
+| --num-threads                                          | integer                                                                                                  | Number of threads                                                                                                                                                                                                                                                                                                                | 4                      |
+| --device                                               | choice (auto | cpu | cuda | mps)                                                                         | Accelerator device                                                                                                                                                                                                                                                                                                               | AcceleratorDevice.AUTO |
+| --help                                                 | boolean                                                                                                  | Show this message and exit.                                                                                                                                                                                                                                                                                                      | False                  |
+
+# Document converter
+
+This is an automatic generated API reference of the main components of Docling.
+
+## document\_converter
+
+Classes:
+
+- DocumentConverter
+          –
+- ConversionResult
+          –
+- ConversionStatus
+          –
+- FormatOption
+          –
+- InputFormat
+          –
+          
+A document format supported by document backend parsers.
+- PdfFormatOption
+          –
+- ImageFormatOption
+          –
+- StandardPdfPipeline
+          –
+- WordFormatOption
+          –
+- PowerpointFormatOption
+          –
+- MarkdownFormatOption
+          –
+- AsciiDocFormatOption
+          –
+- HTMLFormatOption
+          –
+- SimplePipeline
+          –
+          
+SimpleModelPipeline.
+
+### DocumentConverter
+
+Methods:
+
+- convert
+            –
+- convert\_all
+            –
+- initialize\_pipeline
+            –
+            
+Initialize the conversion pipeline for the selected format.
+
+Attributes:
+
+- allowed\_formats
+          –
+- format\_to\_options
+          –
+- initialized\_pipelines
+              (Dict[Type[BasePipeline], BasePipeline])
+          –
+
+#### allowed\_formats
+
+instance-attribute
+
+#### format\_to\_options
+
+instance-attribute
+
+#### initialized\_pipelines
+
+instance-attribute
+
+#### convert
+
+#### convert\_all
+
+#### initialize\_pipeline
+
+Initialize the conversion pipeline for the selected format.
+
+### ConversionResult
+
+Bases: BaseModel
+
+Attributes:
+
+- assembled
+              (AssembledUnit)
+          –
+- document
+              (DoclingDocument)
+          –
+- errors
+              (List[ErrorItem])
+          –
+- input
+              (InputDocument)
+          –
+- legacy\_document
+          –
+- pages
+              (List[Page])
+          –
+- status
+              (ConversionStatus)
+          –
+- timings
+              (Dict[str, ProfilingItem])
+          –
+
+#### assembled
+
+class-attribute
+instance-attribute
+
+#### document
+
+class-attribute
+instance-attribute
+
+#### errors
+
+class-attribute
+instance-attribute
+
+#### input
+
+instance-attribute
+
+#### legacy\_document
+
+property
+
+#### pages
+
+class-attribute
+instance-attribute
+
+#### status
+
+class-attribute
+instance-attribute
+
+#### timings
+
+class-attribute
+instance-attribute
+
+### ConversionStatus
+
+Bases: str, Enum
+
+Attributes:
+
+- FAILURE
+          –
+- PARTIAL\_SUCCESS
+          –
+- PENDING
+          –
+- SKIPPED
+          –
+- STARTED
+          –
+- SUCCESS
+          –
+
+#### FAILURE
+
+class-attribute
+instance-attribute
+
+#### PARTIAL\_SUCCESS
+
+class-attribute
+instance-attribute
+
+#### PENDING
+
+class-attribute
+instance-attribute
+
+#### SKIPPED
+
+class-attribute
+instance-attribute
+
+#### STARTED
+
+class-attribute
+instance-attribute
+
+#### SUCCESS
+
+class-attribute
+instance-attribute
+
+### FormatOption
+
+Bases: BaseModel
+
+Methods:
+
+- set\_optional\_field\_default
+            –
+
+Attributes:
+
+- backend
+              (Type[AbstractDocumentBackend])
+          –
+- model\_config
+          –
+- pipeline\_cls
+              (Type[BasePipeline])
+          –
+- pipeline\_options
+              (Optional[PipelineOptions])
+          –
+
+#### backend
+
+instance-attribute
+
+#### model\_config
+
+class-attribute
+instance-attribute
+
+#### pipeline\_cls
+
+instance-attribute
+
+#### pipeline\_options
+
+class-attribute
+instance-attribute
+
+#### set\_optional\_field\_default
+
+### InputFormat
+
+Bases: str, Enum
+
+A document format supported by document backend parsers.
+
+Attributes:
+
+- ASCIIDOC
+          –
+- DOCX
+          –
+- HTML
+          –
+- IMAGE
+          –
+- JSON\_DOCLING
+          –
+- MD
+          –
+- PDF
+          –
+- PPTX
+          –
+- XLSX
+          –
+- XML\_PUBMED
+          –
+- XML\_USPTO
+          –
+
+#### ASCIIDOC
+
+class-attribute
+instance-attribute
+
+#### DOCX
+
+class-attribute
+instance-attribute
+
+#### HTML
+
+class-attribute
+instance-attribute
+
+#### IMAGE
+
+class-attribute
+instance-attribute
+
+#### JSON\_DOCLING
+
+class-attribute
+instance-attribute
+
+#### MD
+
+class-attribute
+instance-attribute
+
+#### PDF
+
+class-attribute
+instance-attribute
+
+#### PPTX
+
+class-attribute
+instance-attribute
+
+#### XLSX
+
+class-attribute
+instance-attribute
+
+#### XML\_PUBMED
+
+class-attribute
+instance-attribute
+
+#### XML\_USPTO
+
+class-attribute
+instance-attribute
+
+### PdfFormatOption
+
+Bases: FormatOption
+
+Methods:
+
+- set\_optional\_field\_default
+            –
+
+Attributes:
+
+- backend
+              (Type[AbstractDocumentBackend])
+          –
+- model\_config
+          –
+- pipeline\_cls
+              (Type)
+          –
+- pipeline\_options
+              (Optional[PipelineOptions])
+          –
+
+#### backend
+
+class-attribute
+instance-attribute
+
+#### model\_config
+
+class-attribute
+instance-attribute
+
+#### pipeline\_cls
+
+class-attribute
+instance-attribute
+
+#### pipeline\_options
+
+class-attribute
+instance-attribute
+
+#### set\_optional\_field\_default
+
+### ImageFormatOption
+
+Bases: FormatOption
+
+Methods:
+
+- set\_optional\_field\_default
+            –
+
+Attributes:
+
+- backend
+              (Type[AbstractDocumentBackend])
+          –
+- model\_config
+          –
+- pipeline\_cls
+              (Type)
+          –
+- pipeline\_options
+              (Optional[PipelineOptions])
+          –
+
+#### backend
+
+class-attribute
+instance-attribute
+
+#### model\_config
+
+class-attribute
+instance-attribute
+
+#### pipeline\_cls
+
+class-attribute
+instance-attribute
+
+#### pipeline\_options
+
+class-attribute
+instance-attribute
+
+#### set\_optional\_field\_default
+
+### StandardPdfPipeline
+
+Bases: PaginatedPipeline
+
+Methods:
+
+- download\_models\_hf
+            –
+- execute
+            –
+- get\_default\_options
+            –
+- get\_ocr\_model
+            –
+- initialize\_page
+            –
+- is\_backend\_supported
+            –
+
+Attributes:
+
+- artifacts\_path
+          –
+- build\_pipe
+          –
+- enrichment\_pipe
+          –
+- glm\_model
+          –
+- keep\_backend
+          –
+- keep\_images
+          –
+- pipeline\_options
+              (PdfPipelineOptions)
+          –
+
+#### artifacts\_path
+
+instance-attribute
+
+#### build\_pipe
+
+instance-attribute
+
+#### enrichment\_pipe
+
+instance-attribute
+
+#### glm\_model
+
+instance-attribute
+
+#### keep\_backend
+
+instance-attribute
+
+#### keep\_images
+
+instance-attribute
+
+#### pipeline\_options
+
+instance-attribute
+
+#### download\_models\_hf
+
+staticmethod
+
+#### execute
+
+#### get\_default\_options
+
+classmethod
+
+#### get\_ocr\_model
+
+#### initialize\_page
+
+#### is\_backend\_supported
+
+classmethod
+
+### WordFormatOption
+
+Bases: FormatOption
+
+Methods:
+
+- set\_optional\_field\_default
+            –
+
+Attributes:
+
+- backend
+              (Type[AbstractDocumentBackend])
+          –
+- model\_config
+          –
+- pipeline\_cls
+              (Type)
+          –
+- pipeline\_options
+              (Optional[PipelineOptions])
+          –
+
+#### backend
+
+class-attribute
+instance-attribute
+
+#### model\_config
+
+class-attribute
+instance-attribute
+
+#### pipeline\_cls
+
+class-attribute
+instance-attribute
+
+#### pipeline\_options
+
+class-attribute
+instance-attribute
+
+#### set\_optional\_field\_default
+
+### PowerpointFormatOption
+
+Bases: FormatOption
+
+Methods:
+
+- set\_optional\_field\_default
+            –
+
+Attributes:
+
+- backend
+              (Type[AbstractDocumentBackend])
+          –
+- model\_config
+          –
+- pipeline\_cls
+              (Type)
+          –
+- pipeline\_options
+              (Optional[PipelineOptions])
+          –
+
+#### backend
+
+class-attribute
+instance-attribute
+
+#### model\_config
+
+class-attribute
+instance-attribute
+
+#### pipeline\_cls
+
+class-attribute
+instance-attribute
+
+#### pipeline\_options
+
+class-attribute
+instance-attribute
+
+#### set\_optional\_field\_default
+
+### MarkdownFormatOption
+
+Bases: FormatOption
+
+Methods:
+
+- set\_optional\_field\_default
+            –
+
+Attributes:
+
+- backend
+              (Type[AbstractDocumentBackend])
+          –
+- model\_config
+          –
+- pipeline\_cls
+              (Type)
+          –
+- pipeline\_options
+              (Optional[PipelineOptions])
+          –
+
+#### backend
+
+class-attribute
+instance-attribute
+
+#### model\_config
+
+class-attribute
+instance-attribute
+
+#### pipeline\_cls
+
+class-attribute
+instance-attribute
+
+#### pipeline\_options
+
+class-attribute
+instance-attribute
+
+#### set\_optional\_field\_default
+
+### AsciiDocFormatOption
+
+Bases: FormatOption
+
+Methods:
+
+- set\_optional\_field\_default
+            –
+
+Attributes:
+
+- backend
+              (Type[AbstractDocumentBackend])
+          –
+- model\_config
+          –
+- pipeline\_cls
+              (Type)
+          –
+- pipeline\_options
+              (Optional[PipelineOptions])
+          –
+
+#### backend
+
+class-attribute
+instance-attribute
+
+#### model\_config
+
+class-attribute
+instance-attribute
+
+#### pipeline\_cls
+
+class-attribute
+instance-attribute
+
+#### pipeline\_options
+
+class-attribute
+instance-attribute
+
+#### set\_optional\_field\_default
+
+### HTMLFormatOption
+
+Bases: FormatOption
+
+Methods:
+
+- set\_optional\_field\_default
+            –
+
+Attributes:
+
+- backend
+              (Type[AbstractDocumentBackend])
+          –
+- model\_config
+          –
+- pipeline\_cls
+              (Type)
+          –
+- pipeline\_options
+              (Optional[PipelineOptions])
+          –
+
+#### backend
+
+class-attribute
+instance-attribute
+
+#### model\_config
+
+class-attribute
+instance-attribute
+
+#### pipeline\_cls
+
+class-attribute
+instance-attribute
+
+#### pipeline\_options
+
+class-attribute
+instance-attribute
+
+#### set\_optional\_field\_default
+
+### SimplePipeline
+
+Bases: BasePipeline
+
+SimpleModelPipeline.
+
+This class is used at the moment for formats / backends
+which produce straight DoclingDocument output.
+
+Methods:
+
+- execute
+            –
+- get\_default\_options
+            –
+- is\_backend\_supported
+            –
+
+Attributes:
+
+- build\_pipe
+              (List[Callable])
+          –
+- enrichment\_pipe
+              (List[GenericEnrichmentModel[Any]])
+          –
+- keep\_images
+          –
+- pipeline\_options
+          –
+
+#### build\_pipe
+
+instance-attribute
+
+#### enrichment\_pipe
+
+instance-attribute
+
+#### keep\_images
+
+instance-attribute
+
+#### pipeline\_options
+
+instance-attribute
+
+#### execute
+
+#### get\_default\_options
+
+classmethod
+
+#### is\_backend\_supported
+
+classmethod
+
+# Docling Document
+
+This is an automatic generated API reference of the DoclingDocument type.
+
+## doc
+
+Package for models defined by the Document type.
+
+Classes:
+
+- DoclingDocument
+          –
+          
+DoclingDocument.
+- DocumentOrigin
+          –
+          
+FileSource.
+- DocItem
+          –
+          
+DocItem.
+- DocItemLabel
+          –
+          
+DocItemLabel.
+- ProvenanceItem
+          –
+          
+ProvenanceItem.
+- GroupItem
+          –
+          
+GroupItem.
+- GroupLabel
+          –
+          
+GroupLabel.
+- NodeItem
+          –
+          
+NodeItem.
+- PageItem
+          –
+          
+PageItem.
+- FloatingItem
+          –
+          
+FloatingItem.
+- TextItem
+          –
+          
+TextItem.
+- TableItem
+          –
+          
+TableItem.
+- TableCell
+          –
+          
+TableCell.
+- TableData
+          –
+          
+BaseTableData.
+- TableCellLabel
+          –
+          
+TableCellLabel.
+- KeyValueItem
+          –
+          
+KeyValueItem.
+- SectionHeaderItem
+          –
+          
+SectionItem.
+- PictureItem
+          –
+          
+PictureItem.
+- ImageRef
+          –
+          
+ImageRef.
+- PictureClassificationClass
+          –
+          
+PictureClassificationData.
+- PictureClassificationData
+          –
+          
+PictureClassificationData.
+- RefItem
+          –
+          
+RefItem.
+- BoundingBox
+          –
+          
+BoundingBox.
+- CoordOrigin
+          –
+          
+CoordOrigin.
+- ImageRefMode
+          –
+          
+ImageRefMode.
+- Size
+          –
+          
+Size.
+
+### DoclingDocument
+
+Bases: BaseModel
+
+DoclingDocument.
+
+Methods:
+
+- add\_code
+            –
+            
+add\_code.
+- add\_group
+            –
+            
+add\_group.
+- add\_heading
+            –
+            
+add\_heading.
+- add\_list\_item
+            –
+            
+add\_list\_item.
+- add\_page
+            –
+            
+add\_page.
+- add\_picture
+            –
+            
+add\_picture.
+- add\_table
+            –
+            
+add\_table.
+- add\_text
+            –
+            
+add\_text.
+- add\_title
+            –
+            
+add\_title.
+- check\_version\_is\_compatible
+            –
+            
+Check if this document version is compatible with current version.
+- export\_to\_dict
+            –
+            
+Export to dict.
+- export\_to\_document\_tokens
+            –
+            
+Exports the document content to a DocumentToken format.
+- export\_to\_element\_tree
+            –
+            
+Export\_to\_element\_tree.
+- export\_to\_html
+            –
+            
+Serialize to HTML.
+- export\_to\_markdown
+            –
+            
+Serialize to Markdown.
+- export\_to\_text
+            –
+            
+export\_to\_text.
+- iterate\_items
+            –
+            
+iterate\_elements.
+- load\_from\_json
+            –
+            
+load\_from\_json.
+- num\_pages
+            –
+            
+num\_pages.
+- print\_element\_tree
+            –
+            
+Print\_element\_tree.
+- save\_as\_document\_tokens
+            –
+            
+Save the document content to a DocumentToken format.
+- save\_as\_html
+            –
+            
+Save to HTML.
+- save\_as\_json
+            –
+            
+Save as json.
+- save\_as\_markdown
+            –
+            
+Save to markdown.
+- save\_as\_yaml
+            –
+            
+Save as yaml.
+- validate\_document
+            –
+            
+validate\_document.
+- validate\_tree
+            –
+            
+validate\_tree.
+
+Attributes:
+
+- body
+              (GroupItem)
+          –
+- furniture
+              (GroupItem)
+          –
+- groups
+              (List[GroupItem])
+          –
+- key\_value\_items
+              (List[KeyValueItem])
+          –
+- name
+              (str)
+          –
+- origin
+              (Optional[DocumentOrigin])
+          –
+- pages
+              (Dict[int, PageItem])
+          –
+- pictures
+              (List[PictureItem])
+          –
+- schema\_name
+              (Literal['DoclingDocument'])
+          –
+- tables
+              (List[TableItem])
+          –
+- texts
+              (List[Union[SectionHeaderItem, ListItem, TextItem, CodeItem]])
+          –
+- version
+              (Annotated[str, StringConstraints(pattern=VERSION\_PATTERN, strict=True)])
+          –
+
+#### body
+
+#### furniture
+
+#### groups
+
+#### key\_value\_items
+
+#### name
+
+#### origin
+
+#### pages
+
+#### pictures
+
+#### schema\_name
+
+#### tables
+
+#### texts
+
+#### version
+
+#### add\_code
+
+add\_code.
+
+Parameters:
+
+- text
+              (str)
+          –
+          
+str:
+- code\_language
+              (Optional[CodeLanguageLabel], default:
+                  None
+)
+          –
+          
+Optional[str]: (Default value = None)
+- orig
+              (Optional[str], default:
+                  None
+)
+          –
+          
+Optional[str]:  (Default value = None)
+- prov
+              (Optional[ProvenanceItem], default:
+                  None
+)
+          –
+          
+Optional[ProvenanceItem]:  (Default value = None)
+- parent
+              (Optional[NodeItem], default:
+                  None
+)
+          –
+          
+Optional[NodeItem]:  (Default value = None)
+
+#### add\_group
+
+add\_group.
+
+Parameters:
+
+- label
+              (Optional[GroupLabel], default:
+                  None
+)
+          –
+          
+Optional[GroupLabel]:  (Default value = None)
+- name
+              (Optional[str], default:
+                  None
+)
+          –
+          
+Optional[str]:  (Default value = None)
+- parent
+              (Optional[NodeItem], default:
+                  None
+)
+          –
+          
+Optional[NodeItem]:  (Default value = None)
+
+#### add\_heading
+
+add\_heading.
+
+Parameters:
+
+- label
+          –
+          
+DocItemLabel:
+- text
+              (str)
+          –
+          
+str:
+- orig
+              (Optional[str], default:
+                  None
+)
+          –
+          
+Optional[str]:  (Default value = None)
+- level
+              (LevelNumber, default:
+                  1
+)
+          –
+          
+LevelNumber:  (Default value = 1)
+- prov
+              (Optional[ProvenanceItem], default:
+                  None
+)
+          –
+          
+Optional[ProvenanceItem]:  (Default value = None)
+- parent
+              (Optional[NodeItem], default:
+                  None
+)
+          –
+          
+Optional[NodeItem]:  (Default value = None)
+
+#### add\_list\_item
+
+add\_list\_item.
+
+Parameters:
+
+- label
+          –
+          
+str:
+- text
+              (str)
+          –
+          
+str:
+- orig
+              (Optional[str], default:
+                  None
+)
+          –
+          
+Optional[str]:  (Default value = None)
+- prov
+              (Optional[ProvenanceItem], default:
+                  None
+)
+          –
+          
+Optional[ProvenanceItem]:  (Default value = None)
+- parent
+              (Optional[NodeItem], default:
+                  None
+)
+          –
+          
+Optional[NodeItem]:  (Default value = None)
+
+#### add\_page
+
+add\_page.
+
+Parameters:
+
+- page\_no
+              (int)
+          –
+          
+int:
+- size
+              (Size)
+          –
+          
+Size:
+
+#### add\_picture
+
+add\_picture.
+
+Parameters:
+
+- data
+          –
+          
+List[PictureData]: (Default value = [])
+- caption
+              (Optional[Union[TextItem, RefItem]], default:
+                  None
+)
+          –
+          
+Optional[Union[TextItem:
+- RefItem]]
+          –
+          
+(Default value = None)
+- prov
+              (Optional[ProvenanceItem], default:
+                  None
+)
+          –
+          
+Optional[ProvenanceItem]:  (Default value = None)
+- parent
+              (Optional[NodeItem], default:
+                  None
+)
+          –
+          
+Optional[NodeItem]:  (Default value = None)
+
+#### add\_table
+
+add\_table.
+
+Parameters:
+
+- data
+              (TableData)
+          –
+          
+TableData:
+- caption
+              (Optional[Union[TextItem, RefItem]], default:
+                  None
+)
+          –
+          
+Optional[Union[TextItem, RefItem]]:  (Default value = None)
+- prov
+              (Optional[ProvenanceItem], default:
+                  None
+)
+          –
+          
+Optional[ProvenanceItem]:  (Default value = None)
+- parent
+              (Optional[NodeItem], default:
+                  None
+)
+          –
+          
+Optional[NodeItem]:  (Default value = None)
+- label
+              (DocItemLabel, default:
+                  TABLE
+)
+          –
+          
+DocItemLabel:  (Default value = DocItemLabel.TABLE)
+
+#### add\_text
+
+add\_text.
+
+Parameters:
+
+- label
+              (DocItemLabel)
+          –
+          
+str:
+- text
+              (str)
+          –
+          
+str:
+- orig
+              (Optional[str], default:
+                  None
+)
+          –
+          
+Optional[str]:  (Default value = None)
+- prov
+              (Optional[ProvenanceItem], default:
+                  None
+)
+          –
+          
+Optional[ProvenanceItem]:  (Default value = None)
+- parent
+              (Optional[NodeItem], default:
+                  None
+)
+          –
+          
+Optional[NodeItem]:  (Default value = None)
+
+#### add\_title
+
+add\_title.
+
+Parameters:
+
+- text
+              (str)
+          –
+          
+str:
+- orig
+              (Optional[str], default:
+                  None
+)
+          –
+          
+Optional[str]:  (Default value = None)
+- prov
+              (Optional[ProvenanceItem], default:
+                  None
+)
+          –
+          
+Optional[ProvenanceItem]:  (Default value = None)
+- parent
+              (Optional[NodeItem], default:
+                  None
+)
+          –
+          
+Optional[NodeItem]:  (Default value = None)
+
+#### check\_version\_is\_compatible
+
+Check if this document version is compatible with current version.
+
+#### export\_to\_dict
+
+Export to dict.
+
+#### export\_to\_document\_tokens
+
+Exports the document content to a DocumentToken format.
+
+Operates on a slice of the document's body as defined through arguments
+from\_element and to\_element; defaulting to the whole main\_text.
+
+Parameters:
+
+- delim
+              (str, default:
+                  '\n'
+)
+          –
+          
+str:  (Default value = "\n\n")
+- from\_element
+              (int, default:
+                  0
+)
+          –
+          
+int:  (Default value = 0)
+- to\_element
+              (int, default:
+                  maxsize
+)
+          –
+          
+Optional[int]:  (Default value = None)
+- labels
+              (set[DocItemLabel], default:
+                  DEFAULT\_EXPORT\_LABELS
+)
+          –
+          
+set[DocItemLabel]
+- xsize
+              (int, default:
+                  100
+)
+          –
+          
+int:  (Default value = 100)
+- ysize
+              (int, default:
+                  100
+)
+          –
+          
+int:  (Default value = 100)
+- add\_location
+              (bool, default:
+                  True
+)
+          –
+          
+bool:  (Default value = True)
+- add\_content
+              (bool, default:
+                  True
+)
+          –
+          
+bool:  (Default value = True)
+- add\_page\_index
+              (bool, default:
+                  True
+)
+          –
+          
+bool:  (Default value = True)
+- add\_table\_cell\_label
+              (bool, default:
+                  True
+)
+          –
+          
+bool:  (Default value = True)
+- add\_table\_cell\_text
+              (bool, default:
+                  True
+)
+          –
+          
+bool:  (Default value = True)
+
+Returns:
+
+- str
+          –
+          
+The content of the document formatted as a DocTags string.
+
+#### export\_to\_element\_tree
+
+Export\_to\_element\_tree.
+
+#### export\_to\_html
+
+Serialize to HTML.
+
+#### export\_to\_markdown
+
+Serialize to Markdown.
+
+Operates on a slice of the document's body as defined through arguments
+from\_element and to\_element; defaulting to the whole document.
+
+Parameters:
+
+- delim
+              (str, default:
+                  '\n'
+)
+          –
+          
+Delimiter to use when concatenating the various Markdown parts. (Default value = "\n").
+- from\_element
+              (int, default:
+                  0
+)
+          –
+          
+Body slicing start index (inclusive). (Default value = 0).
+- to\_element
+              (int, default:
+                  maxsize
+)
+          –
+          
+Body slicing stop index (exclusive). (Default value = maxint).
+- labels
+              (set[DocItemLabel], default:
+                  DEFAULT\_EXPORT\_LABELS
+)
+          –
+          
+The set of document labels to include in the export.
+- strict\_text
+              (bool, default:
+                  False
+)
+          –
+          
+bool: Whether to only include the text content of the document. (Default value = False).
+- image\_placeholder
+              (str, default:
+                  '<!-- image -->'
+)
+          –
+          
+The placeholder to include to position images in the markdown. (Default value = "\<!-- image -->").
+- image\_mode
+              (ImageRefMode, default:
+                  PLACEHOLDER
+)
+          –
+          
+The mode to use for including images in the markdown. (Default value = ImageRefMode.PLACEHOLDER).
+- indent
+              (int, default:
+                  4
+)
+          –
+          
+The indent in spaces of the nested lists. (Default value = 4).
+
+Returns:
+
+- str
+          –
+          
+The exported Markdown representation.
+
+#### export\_to\_text
+
+export\_to\_text.
+
+#### iterate\_items
+
+iterate\_elements.
+
+Parameters:
+
+- root
+              (Optional[NodeItem], default:
+                  None
+)
+          –
+          
+Optional[NodeItem]:  (Default value = None)
+- with\_groups
+              (bool, default:
+                  False
+)
+          –
+          
+bool:  (Default value = False)
+- traverse\_pictures
+              (bool, default:
+                  False
+)
+          –
+          
+bool:  (Default value = False)
+- page\_no
+              (Optional[int], default:
+                  None
+)
+          –
+          
+Optional[int]:  (Default value = None)
+- \_level
+              (int, default:
+                  0
+)
+          –
+          
+(Default value = 0)
+
+#### load\_from\_json
+
+load\_from\_json.
+
+Parameters:
+
+- filename
+              (Path)
+          –
+          
+The filename to load a saved DoclingDocument from a .json.
+
+Returns:
+
+- DoclingDocument
+          –
+          
+The loaded DoclingDocument.
+
+#### num\_pages
+
+num\_pages.
+
+#### print\_element\_tree
+
+Print\_element\_tree.
+
+#### save\_as\_document\_tokens
+
+Save the document content to a DocumentToken format.
+
+#### save\_as\_html
+
+Save to HTML.
+
+#### save\_as\_json
+
+Save as json.
+
+#### save\_as\_markdown
+
+Save to markdown.
+
+#### save\_as\_yaml
+
+Save as yaml.
+
+#### validate\_document
+
+validate\_document.
+
+#### validate\_tree
+
+validate\_tree.
+
+### DocumentOrigin
+
+Bases: BaseModel
+
+FileSource.
+
+Methods:
+
+- parse\_hex\_string
+            –
+            
+parse\_hex\_string.
+- validate\_mimetype
+            –
+            
+validate\_mimetype.
+
+Attributes:
+
+- binary\_hash
+              (Uint64)
+          –
+- filename
+              (str)
+          –
+- mimetype
+              (str)
+          –
+- uri
+              (Optional[AnyUrl])
+          –
+
+#### binary\_hash
+
+#### filename
+
+#### mimetype
+
+#### uri
+
+#### parse\_hex\_string
+
+parse\_hex\_string.
+
+#### validate\_mimetype
+
+validate\_mimetype.
+
+### DocItem
+
+Bases: NodeItem
+
+DocItem.
+
+Methods:
+
+- get\_image
+            –
+            
+Returns the image of this DocItem.
+- get\_location\_tokens
+            –
+            
+Get the location string for the BaseCell.
+- get\_ref
+            –
+            
+get\_ref.
+
+Attributes:
+
+- children
+              (List[RefItem])
+          –
+- label
+              (DocItemLabel)
+          –
+- model\_config
+          –
+- parent
+              (Optional[RefItem])
+          –
+- prov
+              (List[ProvenanceItem])
+          –
+- self\_ref
+              (str)
+          –
+
+#### children
+
+#### label
+
+#### model\_config
+
+#### parent
+
+#### prov
+
+#### self\_ref
+
+#### get\_image
+
+Returns the image of this DocItem.
+
+The function returns None if this DocItem has no valid provenance or
+if a valid image of the page containing this DocItem is not available
+in doc.
+
+#### get\_location\_tokens
+
+Get the location string for the BaseCell.
+
+#### get\_ref
+
+get\_ref.
+
+### DocItemLabel
+
+Bases: str, Enum
+
+DocItemLabel.
+
+Methods:
+
+- get\_color
+            –
+            
+Return the RGB color associated with a given label.
+
+Attributes:
+
+- CAPTION
+          –
+- CHECKBOX\_SELECTED
+          –
+- CHECKBOX\_UNSELECTED
+          –
+- CODE
+          –
+- DOCUMENT\_INDEX
+          –
+- FOOTNOTE
+          –
+- FORM
+          –
+- FORMULA
+          –
+- KEY\_VALUE\_REGION
+          –
+- LIST\_ITEM
+          –
+- PAGE\_FOOTER
+          –
+- PAGE\_HEADER
+          –
+- PARAGRAPH
+          –
+- PICTURE
+          –
+- REFERENCE
+          –
+- SECTION\_HEADER
+          –
+- TABLE
+          –
+- TEXT
+          –
+- TITLE
+          –
+
+#### CAPTION
+
+#### CHECKBOX\_SELECTED
+
+#### CHECKBOX\_UNSELECTED
+
+#### CODE
+
+#### DOCUMENT\_INDEX
+
+#### FOOTNOTE
+
+#### FORM
+
+#### FORMULA
+
+#### KEY\_VALUE\_REGION
+
+#### LIST\_ITEM
+
+#### PAGE\_FOOTER
+
+#### PAGE\_HEADER
+
+#### PARAGRAPH
+
+#### PICTURE
+
+#### REFERENCE
+
+#### SECTION\_HEADER
+
+#### TABLE
+
+#### TEXT
+
+#### TITLE
+
+#### get\_color
+
+Return the RGB color associated with a given label.
+
+### ProvenanceItem
+
+Bases: BaseModel
+
+ProvenanceItem.
+
+Attributes:
+
+- bbox
+              (BoundingBox)
+          –
+- charspan
+              (Tuple[int, int])
+          –
+- page\_no
+              (int)
+          –
+
+#### bbox
+
+#### charspan
+
+#### page\_no
+
+### GroupItem
+
+Bases: NodeItem
+
+GroupItem.
+
+Methods:
+
+- get\_ref
+            –
+            
+get\_ref.
+
+Attributes:
+
+- children
+              (List[RefItem])
+          –
+- label
+              (GroupLabel)
+          –
+- model\_config
+          –
+- name
+              (str)
+          –
+- parent
+              (Optional[RefItem])
+          –
+- self\_ref
+              (str)
+          –
+
+#### children
+
+#### label
+
+#### model\_config
+
+#### name
+
+#### parent
+
+#### self\_ref
+
+#### get\_ref
+
+get\_ref.
+
+### GroupLabel
+
+Bases: str, Enum
+
+GroupLabel.
+
+Attributes:
+
+- CHAPTER
+          –
+- COMMENT\_SECTION
+          –
+- FORM\_AREA
+          –
+- KEY\_VALUE\_AREA
+          –
+- LIST
+          –
+- ORDERED\_LIST
+          –
+- SECTION
+          –
+- SHEET
+          –
+- SLIDE
+          –
+- UNSPECIFIED
+          –
+
+#### CHAPTER
+
+#### COMMENT\_SECTION
+
+#### FORM\_AREA
+
+#### KEY\_VALUE\_AREA
+
+#### LIST
+
+#### ORDERED\_LIST
+
+#### SECTION
+
+#### SHEET
+
+#### SLIDE
+
+#### UNSPECIFIED
+
+### NodeItem
+
+Bases: BaseModel
+
+NodeItem.
+
+Methods:
+
+- get\_ref
+            –
+            
+get\_ref.
+
+Attributes:
+
+- children
+              (List[RefItem])
+          –
+- model\_config
+          –
+- parent
+              (Optional[RefItem])
+          –
+- self\_ref
+              (str)
+          –
+
+#### children
+
+#### model\_config
+
+#### parent
+
+#### self\_ref
+
+#### get\_ref
+
+get\_ref.
+
+### PageItem
+
+Bases: BaseModel
+
+PageItem.
+
+Attributes:
+
+- image
+              (Optional[ImageRef])
+          –
+- page\_no
+              (int)
+          –
+- size
+              (Size)
+          –
+
+#### image
+
+#### page\_no
+
+#### size
+
+### FloatingItem
+
+Bases: DocItem
+
+FloatingItem.
+
+Methods:
+
+- caption\_text
+            –
+            
+Computes the caption as a single text.
+- get\_image
+            –
+            
+Returns the image corresponding to this FloatingItem.
+- get\_location\_tokens
+            –
+            
+Get the location string for the BaseCell.
+- get\_ref
+            –
+            
+get\_ref.
+
+Attributes:
+
+- captions
+              (List[RefItem])
+          –
+- children
+              (List[RefItem])
+          –
+- footnotes
+              (List[RefItem])
+          –
+- image
+              (Optional[ImageRef])
+          –
+- label
+              (DocItemLabel)
+          –
+- model\_config
+          –
+- parent
+              (Optional[RefItem])
+          –
+- prov
+              (List[ProvenanceItem])
+          –
+- references
+              (List[RefItem])
+          –
+- self\_ref
+              (str)
+          –
+
+#### captions
+
+#### children
+
+#### footnotes
+
+#### image
+
+#### label
+
+#### model\_config
+
+#### parent
+
+#### prov
+
+#### references
+
+#### self\_ref
+
+#### caption\_text
+
+Computes the caption as a single text.
+
+#### get\_image
+
+Returns the image corresponding to this FloatingItem.
+
+This function returns the PIL image from self.image if one is available.
+Otherwise, it uses DocItem.get\_image to get an image of this FloatingItem.
+
+In particular, when self.image is None, the function returns None if this
+FloatingItem has no valid provenance or the doc does not contain a valid image
+for the required page.
+
+#### get\_location\_tokens
+
+Get the location string for the BaseCell.
+
+#### get\_ref
+
+get\_ref.
+
+### TextItem
+
+Bases: DocItem
+
+TextItem.
+
+Methods:
+
+- export\_to\_document\_tokens
+            –
+            
+Export text element to document tokens format.
+- get\_image
+            –
+            
+Returns the image of this DocItem.
+- get\_location\_tokens
+            –
+            
+Get the location string for the BaseCell.
+- get\_ref
+            –
+            
+get\_ref.
+
+Attributes:
+
+- children
+              (List[RefItem])
+          –
+- label
+              (Literal[CAPTION, CHECKBOX\_SELECTED, CHECKBOX\_UNSELECTED, FOOTNOTE, FORMULA, PAGE\_FOOTER, PAGE\_HEADER, PARAGRAPH, REFERENCE, TEXT, TITLE])
+          –
+- model\_config
+          –
+- orig
+              (str)
+          –
+- parent
+              (Optional[RefItem])
+          –
+- prov
+              (List[ProvenanceItem])
+          –
+- self\_ref
+              (str)
+          –
+- text
+              (str)
+          –
+
+#### children
+
+#### label
+
+#### model\_config
+
+#### orig
+
+#### parent
+
+#### prov
+
+#### self\_ref
+
+#### text
+
+#### export\_to\_document\_tokens
+
+Export text element to document tokens format.
+
+Parameters:
+
+- doc
+              (DoclingDocument)
+          –
+          
+"DoclingDocument":
+- new\_line
+              (str, default:
+                  '\n'
+)
+          –
+          
+str:  (Default value = "\n")
+- xsize
+              (int, default:
+                  100
+)
+          –
+          
+int:  (Default value = 100)
+- ysize
+              (int, default:
+                  100
+)
+          –
+          
+int:  (Default value = 100)
+- add\_location
+              (bool, default:
+                  True
+)
+          –
+          
+bool:  (Default value = True)
+- add\_content
+              (bool, default:
+                  True
+)
+          –
+          
+bool:  (Default value = True)
+- add\_page\_index
+              (bool, default:
+                  True
+)
+          –
+          
+bool:  (Default value = True)
+
+#### get\_image
+
+Returns the image of this DocItem.
+
+The function returns None if this DocItem has no valid provenance or
+if a valid image of the page containing this DocItem is not available
+in doc.
+
+#### get\_location\_tokens
+
+Get the location string for the BaseCell.
+
+#### get\_ref
+
+get\_ref.
+
+### TableItem
+
+Bases: FloatingItem
+
+TableItem.
+
+Methods:
+
+- caption\_text
+            –
+            
+Computes the caption as a single text.
+- export\_to\_dataframe
+            –
+            
+Export the table as a Pandas DataFrame.
+- export\_to\_document\_tokens
+            –
+            
+Export table to document tokens format.
+- export\_to\_html
+            –
+            
+Export the table as html.
+- export\_to\_markdown
+            –
+            
+Export the table as markdown.
+- export\_to\_otsl
+            –
+            
+Export the table as OTSL.
+- get\_image
+            –
+            
+Returns the image corresponding to this FloatingItem.
+- get\_location\_tokens
+            –
+            
+Get the location string for the BaseCell.
+- get\_ref
+            –
+            
+get\_ref.
+
+Attributes:
+
+- captions
+              (List[RefItem])
+          –
+- children
+              (List[RefItem])
+          –
+- data
+              (TableData)
+          –
+- footnotes
+              (List[RefItem])
+          –
+- image
+              (Optional[ImageRef])
+          –
+- label
+              (Literal[DOCUMENT\_INDEX, TABLE])
+          –
+- model\_config
+          –
+- parent
+              (Optional[RefItem])
+          –
+- prov
+              (List[ProvenanceItem])
+          –
+- references
+              (List[RefItem])
+          –
+- self\_ref
+              (str)
+          –
+
+#### captions
+
+#### children
+
+#### data
+
+#### footnotes
+
+#### image
+
+#### label
+
+#### model\_config
+
+#### parent
+
+#### prov
+
+#### references
+
+#### self\_ref
+
+#### caption\_text
+
+Computes the caption as a single text.
+
+#### export\_to\_dataframe
+
+Export the table as a Pandas DataFrame.
+
+#### export\_to\_document\_tokens
+
+Export table to document tokens format.
+
+Parameters:
+
+- doc
+              (DoclingDocument)
+          –
+          
+"DoclingDocument":
+- new\_line
+              (str, default:
+                  '\n'
+)
+          –
+          
+str:  (Default value = "\n")
+- xsize
+              (int, default:
+                  100
+)
+          –
+          
+int:  (Default value = 100)
+- ysize
+              (int, default:
+                  100
+)
+          –
+          
+int:  (Default value = 100)
+- add\_location
+              (bool, default:
+                  True
+)
+          –
+          
+bool:  (Default value = True)
+- add\_caption
+              (bool, default:
+                  True
+)
+          –
+          
+bool:  (Default value = True)
+- add\_content
+              (bool, default:
+                  True
+)
+          –
+          
+bool:  (Default value = True)
+- add\_cell\_location
+              (bool, default:
+                  True
+)
+          –
+          
+bool:  (Default value = True)
+- add\_cell\_label
+              (bool, default:
+                  True
+)
+          –
+          
+bool:  (Default value = True)
+- add\_cell\_text
+              (bool, default:
+                  True
+)
+          –
+          
+bool:  (Default value = True)
+- add\_page\_index
+              (bool, default:
+                  True
+)
+          –
+          
+bool:  (Default value = True)
+
+#### export\_to\_html
+
+Export the table as html.
+
+#### export\_to\_markdown
+
+Export the table as markdown.
+
+#### export\_to\_otsl
+
+Export the table as OTSL.
+
+#### get\_image
+
+Returns the image corresponding to this FloatingItem.
+
+This function returns the PIL image from self.image if one is available.
+Otherwise, it uses DocItem.get\_image to get an image of this FloatingItem.
+
+In particular, when self.image is None, the function returns None if this
+FloatingItem has no valid provenance or the doc does not contain a valid image
+for the required page.
+
+#### get\_location\_tokens
+
+Get the location string for the BaseCell.
+
+#### get\_ref
+
+get\_ref.
+
+### TableCell
+
+Bases: BaseModel
+
+TableCell.
+
+Methods:
+
+- from\_dict\_format
+            –
+            
+from\_dict\_format.
+
+Attributes:
+
+- bbox
+              (Optional[BoundingBox])
+          –
+- col\_span
+              (int)
+          –
+- column\_header
+              (bool)
+          –
+- end\_col\_offset\_idx
+              (int)
+          –
+- end\_row\_offset\_idx
+              (int)
+          –
+- row\_header
+              (bool)
+          –
+- row\_section
+              (bool)
+          –
+- row\_span
+              (int)
+          –
+- start\_col\_offset\_idx
+              (int)
+          –
+- start\_row\_offset\_idx
+              (int)
+          –
+- text
+              (str)
+          –
+
+#### bbox
+
+#### col\_span
+
+#### column\_header
+
+#### end\_col\_offset\_idx
+
+#### end\_row\_offset\_idx
+
+#### row\_header
+
+#### row\_section
+
+#### row\_span
+
+#### start\_col\_offset\_idx
+
+#### start\_row\_offset\_idx
+
+#### text
+
+#### from\_dict\_format
+
+from\_dict\_format.
+
+### TableData
+
+Bases: BaseModel
+
+BaseTableData.
+
+Attributes:
+
+- grid
+              (List[List[TableCell]])
+          –
+          
+grid.
+- num\_cols
+              (int)
+          –
+- num\_rows
+              (int)
+          –
+- table\_cells
+              (List[TableCell])
+          –
+
+#### grid
+
+grid.
+
+#### num\_cols
+
+#### num\_rows
+
+#### table\_cells
+
+### TableCellLabel
+
+Bases: str, Enum
+
+TableCellLabel.
+
+Attributes:
+
+- BODY
+          –
+- COLUMN\_HEADER
+          –
+- ROW\_HEADER
+          –
+- ROW\_SECTION
+          –
+
+#### BODY
+
+#### COLUMN\_HEADER
+
+#### ROW\_HEADER
+
+#### ROW\_SECTION
+
+### KeyValueItem
+
+Bases: DocItem
+
+KeyValueItem.
+
+Methods:
+
+- get\_image
+            –
+            
+Returns the image of this DocItem.
+- get\_location\_tokens
+            –
+            
+Get the location string for the BaseCell.
+- get\_ref
+            –
+            
+get\_ref.
+
+Attributes:
+
+- children
+              (List[RefItem])
+          –
+- label
+              (Literal[KEY\_VALUE\_REGION])
+          –
+- model\_config
+          –
+- parent
+              (Optional[RefItem])
+          –
+- prov
+              (List[ProvenanceItem])
+          –
+- self\_ref
+              (str)
+          –
+
+#### children
+
+#### label
+
+#### model\_config
+
+#### parent
+
+#### prov
+
+#### self\_ref
+
+#### get\_image
+
+Returns the image of this DocItem.
+
+The function returns None if this DocItem has no valid provenance or
+if a valid image of the page containing this DocItem is not available
+in doc.
+
+#### get\_location\_tokens
+
+Get the location string for the BaseCell.
+
+#### get\_ref
+
+get\_ref.
+
+### SectionHeaderItem
+
+Bases: TextItem
+
+SectionItem.
+
+Methods:
+
+- export\_to\_document\_tokens
+            –
+            
+Export text element to document tokens format.
+- get\_image
+            –
+            
+Returns the image of this DocItem.
+- get\_location\_tokens
+            –
+            
+Get the location string for the BaseCell.
+- get\_ref
+            –
+            
+get\_ref.
+
+Attributes:
+
+- children
+              (List[RefItem])
+          –
+- label
+              (Literal[SECTION\_HEADER])
+          –
+- level
+              (LevelNumber)
+          –
+- model\_config
+          –
+- orig
+              (str)
+          –
+- parent
+              (Optional[RefItem])
+          –
+- prov
+              (List[ProvenanceItem])
+          –
+- self\_ref
+              (str)
+          –
+- text
+              (str)
+          –
+
+#### children
+
+#### label
+
+#### level
+
+#### model\_config
+
+#### orig
+
+#### parent
+
+#### prov
+
+#### self\_ref
+
+#### text
+
+#### export\_to\_document\_tokens
+
+Export text element to document tokens format.
+
+Parameters:
+
+- doc
+              (DoclingDocument)
+          –
+          
+"DoclingDocument":
+- new\_line
+              (str, default:
+                  '\n'
+)
+          –
+          
+str:  (Default value = "\n")
+- xsize
+              (int, default:
+                  100
+)
+          –
+          
+int:  (Default value = 100)
+- ysize
+              (int, default:
+                  100
+)
+          –
+          
+int:  (Default value = 100)
+- add\_location
+              (bool, default:
+                  True
+)
+          –
+          
+bool:  (Default value = True)
+- add\_content
+              (bool, default:
+                  True
+)
+          –
+          
+bool:  (Default value = True)
+- add\_page\_index
+              (bool, default:
+                  True
+)
+          –
+          
+bool:  (Default value = True)
+
+#### get\_image
+
+Returns the image of this DocItem.
+
+The function returns None if this DocItem has no valid provenance or
+if a valid image of the page containing this DocItem is not available
+in doc.
+
+#### get\_location\_tokens
+
+Get the location string for the BaseCell.
+
+#### get\_ref
+
+get\_ref.
+
+### PictureItem
+
+Bases: FloatingItem
+
+PictureItem.
+
+Methods:
+
+- caption\_text
+            –
+            
+Computes the caption as a single text.
+- export\_to\_document\_tokens
+            –
+            
+Export picture to document tokens format.
+- export\_to\_html
+            –
+            
+Export picture to HTML format.
+- export\_to\_markdown
+            –
+            
+Export picture to Markdown format.
+- get\_image
+            –
+            
+Returns the image corresponding to this FloatingItem.
+- get\_location\_tokens
+            –
+            
+Get the location string for the BaseCell.
+- get\_ref
+            –
+            
+get\_ref.
+
+Attributes:
+
+- annotations
+              (List[PictureDataType])
+          –
+- captions
+              (List[RefItem])
+          –
+- children
+              (List[RefItem])
+          –
+- footnotes
+              (List[RefItem])
+          –
+- image
+              (Optional[ImageRef])
+          –
+- label
+              (Literal[PICTURE])
+          –
+- model\_config
+          –
+- parent
+              (Optional[RefItem])
+          –
+- prov
+              (List[ProvenanceItem])
+          –
+- references
+              (List[RefItem])
+          –
+- self\_ref
+              (str)
+          –
+
+#### annotations
+
+#### captions
+
+#### children
+
+#### footnotes
+
+#### image
+
+#### label
+
+#### model\_config
+
+#### parent
+
+#### prov
+
+#### references
+
+#### self\_ref
+
+#### caption\_text
+
+Computes the caption as a single text.
+
+#### export\_to\_document\_tokens
+
+Export picture to document tokens format.
+
+Parameters:
+
+- doc
+              (DoclingDocument)
+          –
+          
+"DoclingDocument":
+- new\_line
+              (str, default:
+                  '\n'
+)
+          –
+          
+str:  (Default value = "\n")
+- xsize
+              (int, default:
+                  100
+)
+          –
+          
+int:  (Default value = 100)
+- ysize
+              (int, default:
+                  100
+)
+          –
+          
+int:  (Default value = 100)
+- add\_location
+              (bool, default:
+                  True
+)
+          –
+          
+bool:  (Default value = True)
+- add\_caption
+              (bool, default:
+                  True
+)
+          –
+          
+bool:  (Default value = True)
+- add\_content
+              (bool, default:
+                  True
+)
+          –
+          
+bool:  (Default value = True)
+
+#### export\_to\_html
+
+Export picture to HTML format.
+
+#### export\_to\_markdown
+
+Export picture to Markdown format.
+
+#### get\_image
+
+Returns the image corresponding to this FloatingItem.
+
+This function returns the PIL image from self.image if one is available.
+Otherwise, it uses DocItem.get\_image to get an image of this FloatingItem.
+
+In particular, when self.image is None, the function returns None if this
+FloatingItem has no valid provenance or the doc does not contain a valid image
+for the required page.
+
+#### get\_location\_tokens
+
+Get the location string for the BaseCell.
+
+#### get\_ref
+
+get\_ref.
+
+### ImageRef
+
+Bases: BaseModel
+
+ImageRef.
+
+Methods:
+
+- from\_pil
+            –
+            
+Construct ImageRef from a PIL Image.
+- validate\_mimetype
+            –
+            
+validate\_mimetype.
+
+Attributes:
+
+- dpi
+              (int)
+          –
+- mimetype
+              (str)
+          –
+- pil\_image
+              (Optional[Image])
+          –
+          
+Return the PIL Image.
+- size
+              (Size)
+          –
+- uri
+              (Union[AnyUrl, Path])
+          –
+
+#### dpi
+
+#### mimetype
+
+#### pil\_image
+
+Return the PIL Image.
+
+#### size
+
+#### uri
+
+#### from\_pil
+
+Construct ImageRef from a PIL Image.
+
+#### validate\_mimetype
+
+validate\_mimetype.
+
+### PictureClassificationClass
+
+Bases: BaseModel
+
+PictureClassificationData.
+
+Attributes:
+
+- class\_name
+              (str)
+          –
+- confidence
+              (float)
+          –
+
+#### class\_name
+
+#### confidence
+
+### PictureClassificationData
+
+Bases: BasePictureData
+
+PictureClassificationData.
+
+Attributes:
+
+- kind
+              (Literal['classification'])
+          –
+- predicted\_classes
+              (List[PictureClassificationClass])
+          –
+- provenance
+              (str)
+          –
+
+#### kind
+
+#### predicted\_classes
+
+#### provenance
+
+### RefItem
+
+Bases: BaseModel
+
+RefItem.
+
+Methods:
+
+- get\_ref
+            –
+            
+get\_ref.
+- resolve
+            –
+            
+resolve.
+
+Attributes:
+
+- cref
+              (str)
+          –
+- model\_config
+          –
+
+#### cref
+
+#### model\_config
+
+#### get\_ref
+
+get\_ref.
+
+#### resolve
+
+resolve.
+
+### BoundingBox
+
+Bases: BaseModel
+
+BoundingBox.
+
+Methods:
+
+- area
+            –
+            
+area.
+- as\_tuple
+            –
+            
+as\_tuple.
+- from\_tuple
+            –
+            
+from\_tuple.
+- intersection\_area\_with
+            –
+            
+intersection\_area\_with.
+- normalized
+            –
+            
+normalized.
+- scaled
+            –
+            
+scaled.
+- to\_bottom\_left\_origin
+            –
+            
+to\_bottom\_left\_origin.
+- to\_top\_left\_origin
+            –
+            
+to\_top\_left\_origin.
+
+Attributes:
+
+- b
+              (float)
+          –
+- coord\_origin
+              (CoordOrigin)
+          –
+- height
+          –
+          
+height.
+- l
+              (float)
+          –
+- r
+              (float)
+          –
+- t
+              (float)
+          –
+- width
+          –
+          
+width.
+
+#### b
+
+#### coord\_origin
+
+#### height
+
+height.
+
+#### l
+
+#### r
+
+#### t
+
+#### width
+
+width.
+
+#### area
+
+area.
+
+#### as\_tuple
+
+as\_tuple.
+
+#### from\_tuple
+
+from\_tuple.
+
+Parameters:
+
+- coord
+              (Tuple[float, ...])
+          –
+          
+Tuple[float:
+- ...]
+          –
+- origin
+              (CoordOrigin)
+          –
+          
+CoordOrigin:
+
+#### intersection\_area\_with
+
+intersection\_area\_with.
+
+Parameters:
+
+- other
+              (BoundingBox)
+          –
+          
+"BoundingBox":
+
+#### normalized
+
+normalized.
+
+Parameters:
+
+- page\_size
+              (Size)
+          –
+          
+Size:
+
+#### scaled
+
+scaled.
+
+Parameters:
+
+- scale
+              (float)
+          –
+          
+float:
+
+#### to\_bottom\_left\_origin
+
+to\_bottom\_left\_origin.
+
+Parameters:
+
+- page\_height
+              (float)
+          –
+
+#### to\_top\_left\_origin
+
+to\_top\_left\_origin.
+
+Parameters:
+
+- page\_height
+              (float)
+          –
+
+### CoordOrigin
+
+Bases: str, Enum
+
+CoordOrigin.
+
+Attributes:
+
+- BOTTOMLEFT
+          –
+- TOPLEFT
+          –
+
+#### BOTTOMLEFT
+
+#### TOPLEFT
+
+### ImageRefMode
+
+Bases: str, Enum
+
+ImageRefMode.
+
+Attributes:
+
+- EMBEDDED
+          –
+- PLACEHOLDER
+          –
+- REFERENCED
+          –
+
+#### EMBEDDED
+
+#### PLACEHOLDER
+
+#### REFERENCED
+
+### Size
+
+Bases: BaseModel
+
+Size.
+
+Methods:
+
+- as\_tuple
+            –
+            
+as\_tuple.
+
+Attributes:
+
+- height
+              (float)
+          –
+- width
+              (float)
+          –
+
+#### height
+
+#### width
+
+#### as\_tuple
+
+as\_tuple.
+
+# Pipeline options
+
+Pipeline options allow to customize the execution of the models during the conversion pipeline.
+This includes options for the OCR engines, the table model as well as enrichment options which
+can be enabled with do\_xyz = True.
+
+This is an automatic generated API reference of the all the pipeline options available in Docling.
+
+## pipeline\_options
+
+Classes:
+
+- AcceleratorDevice
+          –
+          
+Devices to run model inference
+- AcceleratorOptions
+          –
+- EasyOcrOptions
+          –
+          
+Options for the EasyOCR engine.
+- OcrEngine
+          –
+          
+Enum of valid OCR engines.
+- OcrMacOptions
+          –
+          
+Options for the Mac OCR engine.
+- OcrOptions
+          –
+          
+OCR options.
+- PdfBackend
+          –
+          
+Enum of valid PDF backends.
+- PdfPipelineOptions
+          –
+          
+Options for the PDF pipeline.
+- PipelineOptions
+          –
+          
+Base pipeline options.
+- RapidOcrOptions
+          –
+          
+Options for the RapidOCR engine.
+- TableFormerMode
+          –
+          
+Modes for the TableFormer model.
+- TableStructureOptions
+          –
+          
+Options for the table structure.
+- TesseractCliOcrOptions
+          –
+          
+Options for the TesseractCli engine.
+- TesseractOcrOptions
+          –
+          
+Options for the Tesseract engine.
+
+### AcceleratorDevice
+
+Bases: str, Enum
+
+Devices to run model inference
+
+Attributes:
+
+- AUTO
+          –
+- CPU
+          –
+- CUDA
+          –
+- MPS
+          –
+
+#### AUTO
+
+class-attribute
+instance-attribute
+
+#### CPU
+
+class-attribute
+instance-attribute
+
+#### CUDA
+
+class-attribute
+instance-attribute
+
+#### MPS
+
+class-attribute
+instance-attribute
+
+### AcceleratorOptions
+
+Bases: BaseSettings
+
+Methods:
+
+- check\_alternative\_envvars
+            –
+            
+Set num\_threads from the "alternative" envvar OMP\_NUM\_THREADS.
+
+Attributes:
+
+- device
+              (AcceleratorDevice)
+          –
+- model\_config
+          –
+- num\_threads
+              (int)
+          –
+
+#### device
+
+class-attribute
+instance-attribute
+
+#### model\_config
+
+class-attribute
+instance-attribute
+
+#### num\_threads
+
+class-attribute
+instance-attribute
+
+#### check\_alternative\_envvars
+
+classmethod
+
+Set num\_threads from the "alternative" envvar OMP\_NUM\_THREADS.
+The alternative envvar is used only if it is valid and the regular envvar is not set.
+
+Notice: The standard pydantic settings mechanism with parameter "aliases" does not provide
+the same functionality. In case the alias envvar is set and the user tries to override the
+parameter in settings initialization, Pydantic treats the parameter provided in init()
+as an extra input instead of simply overwriting the evvar value for that parameter.
+
+### EasyOcrOptions
+
+Bases: OcrOptions
+
+Options for the EasyOCR engine.
+
+Attributes:
+
+- bitmap\_area\_threshold
+              (float)
+          –
+- confidence\_threshold
+              (float)
+          –
+- download\_enabled
+              (bool)
+          –
+- force\_full\_page\_ocr
+              (bool)
+          –
+- kind
+              (Literal['easyocr'])
+          –
+- lang
+              (List[str])
+          –
+- model\_config
+          –
+- model\_storage\_directory
+              (Optional[str])
+          –
+- recog\_network
+              (Optional[str])
+          –
+- use\_gpu
+              (Optional[bool])
+          –
+
+#### bitmap\_area\_threshold
+
+class-attribute
+instance-attribute
+
+#### confidence\_threshold
+
+class-attribute
+instance-attribute
+
+#### download\_enabled
+
+class-attribute
+instance-attribute
+
+#### force\_full\_page\_ocr
+
+class-attribute
+instance-attribute
+
+#### kind
+
+class-attribute
+instance-attribute
+
+#### lang
+
+class-attribute
+instance-attribute
+
+#### model\_config
+
+class-attribute
+instance-attribute
+
+#### model\_storage\_directory
+
+class-attribute
+instance-attribute
+
+#### recog\_network
+
+class-attribute
+instance-attribute
+
+#### use\_gpu
+
+class-attribute
+instance-attribute
+
+### OcrEngine
+
+Bases: str, Enum
+
+Enum of valid OCR engines.
+
+Attributes:
+
+- EASYOCR
+          –
+- OCRMAC
+          –
+- RAPIDOCR
+          –
+- TESSERACT
+          –
+- TESSERACT\_CLI
+          –
+
+#### EASYOCR
+
+class-attribute
+instance-attribute
+
+#### OCRMAC
+
+class-attribute
+instance-attribute
+
+#### RAPIDOCR
+
+class-attribute
+instance-attribute
+
+#### TESSERACT
+
+class-attribute
+instance-attribute
+
+#### TESSERACT\_CLI
+
+class-attribute
+instance-attribute
+
+### OcrMacOptions
+
+Bases: OcrOptions
+
+Options for the Mac OCR engine.
+
+Attributes:
+
+- bitmap\_area\_threshold
+              (float)
+          –
+- force\_full\_page\_ocr
+              (bool)
+          –
+- framework
+              (str)
+          –
+- kind
+              (Literal['ocrmac'])
+          –
+- lang
+              (List[str])
+          –
+- model\_config
+          –
+- recognition
+              (str)
+          –
+
+#### bitmap\_area\_threshold
+
+class-attribute
+instance-attribute
+
+#### force\_full\_page\_ocr
+
+class-attribute
+instance-attribute
+
+#### framework
+
+class-attribute
+instance-attribute
+
+#### kind
+
+class-attribute
+instance-attribute
+
+#### lang
+
+class-attribute
+instance-attribute
+
+#### model\_config
+
+class-attribute
+instance-attribute
+
+#### recognition
+
+class-attribute
+instance-attribute
+
+### OcrOptions
+
+Bases: BaseModel
+
+OCR options.
+
+Attributes:
+
+- bitmap\_area\_threshold
+              (float)
+          –
+- force\_full\_page\_ocr
+              (bool)
+          –
+- kind
+              (str)
+          –
+- lang
+              (List[str])
+          –
+
+#### bitmap\_area\_threshold
+
+class-attribute
+instance-attribute
+
+#### force\_full\_page\_ocr
+
+class-attribute
+instance-attribute
+
+#### kind
+
+instance-attribute
+
+#### lang
+
+instance-attribute
+
+### PdfBackend
+
+Bases: str, Enum
+
+Enum of valid PDF backends.
+
+Attributes:
+
+- DLPARSE\_V1
+          –
+- DLPARSE\_V2
+          –
+- PYPDFIUM2
+          –
+
+#### DLPARSE\_V1
+
+class-attribute
+instance-attribute
+
+#### DLPARSE\_V2
+
+class-attribute
+instance-attribute
+
+#### PYPDFIUM2
+
+class-attribute
+instance-attribute
+
+### PdfPipelineOptions
+
+Bases: PipelineOptions
+
+Options for the PDF pipeline.
+
+Attributes:
+
+- accelerator\_options
+              (AcceleratorOptions)
+          –
+- artifacts\_path
+              (Optional[Union[Path, str]])
+          –
+- create\_legacy\_output
+              (bool)
+          –
+- do\_code\_enrichment
+              (bool)
+          –
+- do\_formula\_enrichment
+              (bool)
+          –
+- do\_ocr
+              (bool)
+          –
+- do\_picture\_classification
+              (bool)
+          –
+- do\_table\_structure
+              (bool)
+          –
+- document\_timeout
+              (Optional[float])
+          –
+- generate\_page\_images
+              (bool)
+          –
+- generate\_picture\_images
+              (bool)
+          –
+- generate\_table\_images
+              (bool)
+          –
+- images\_scale
+              (float)
+          –
+- ocr\_options
+              (Union[EasyOcrOptions, TesseractCliOcrOptions, TesseractOcrOptions, OcrMacOptions, RapidOcrOptions])
+          –
+- table\_structure\_options
+              (TableStructureOptions)
+          –
+
+#### accelerator\_options
+
+class-attribute
+instance-attribute
+
+#### artifacts\_path
+
+class-attribute
+instance-attribute
+
+#### create\_legacy\_output
+
+class-attribute
+instance-attribute
+
+#### do\_code\_enrichment
+
+class-attribute
+instance-attribute
+
+#### do\_formula\_enrichment
+
+class-attribute
+instance-attribute
+
+#### do\_ocr
+
+class-attribute
+instance-attribute
+
+#### do\_picture\_classification
+
+class-attribute
+instance-attribute
+
+#### do\_table\_structure
+
+class-attribute
+instance-attribute
+
+#### document\_timeout
+
+class-attribute
+instance-attribute
+
+#### generate\_page\_images
+
+class-attribute
+instance-attribute
+
+#### generate\_picture\_images
+
+class-attribute
+instance-attribute
+
+#### generate\_table\_images
+
+class-attribute
+instance-attribute
+
+#### images\_scale
+
+class-attribute
+instance-attribute
+
+#### ocr\_options
+
+class-attribute
+instance-attribute
+
+#### table\_structure\_options
+
+class-attribute
+instance-attribute
+
+### PipelineOptions
+
+Bases: BaseModel
+
+Base pipeline options.
+
+Attributes:
+
+- accelerator\_options
+              (AcceleratorOptions)
+          –
+- create\_legacy\_output
+              (bool)
+          –
+- document\_timeout
+              (Optional[float])
+          –
+
+#### accelerator\_options
+
+class-attribute
+instance-attribute
+
+#### create\_legacy\_output
+
+class-attribute
+instance-attribute
+
+#### document\_timeout
+
+class-attribute
+instance-attribute
+
+### RapidOcrOptions
+
+Bases: OcrOptions
+
+Options for the RapidOCR engine.
+
+Attributes:
+
+- bitmap\_area\_threshold
+              (float)
+          –
+- cls\_model\_path
+              (Optional[str])
+          –
+- det\_model\_path
+              (Optional[str])
+          –
+- force\_full\_page\_ocr
+              (bool)
+          –
+- kind
+              (Literal['rapidocr'])
+          –
+- lang
+              (List[str])
+          –
+- model\_config
+          –
+- print\_verbose
+              (bool)
+          –
+- rec\_keys\_path
+              (Optional[str])
+          –
+- rec\_model\_path
+              (Optional[str])
+          –
+- text\_score
+              (float)
+          –
+- use\_cls
+              (Optional[bool])
+          –
+- use\_det
+              (Optional[bool])
+          –
+- use\_rec
+              (Optional[bool])
+          –
+
+#### bitmap\_area\_threshold
+
+class-attribute
+instance-attribute
+
+#### cls\_model\_path
+
+class-attribute
+instance-attribute
+
+#### det\_model\_path
+
+class-attribute
+instance-attribute
+
+#### force\_full\_page\_ocr
+
+class-attribute
+instance-attribute
+
+#### kind
+
+class-attribute
+instance-attribute
+
+#### lang
+
+class-attribute
+instance-attribute
+
+#### model\_config
+
+class-attribute
+instance-attribute
+
+#### print\_verbose
+
+class-attribute
+instance-attribute
+
+#### rec\_keys\_path
+
+class-attribute
+instance-attribute
+
+#### rec\_model\_path
+
+class-attribute
+instance-attribute
+
+#### text\_score
+
+class-attribute
+instance-attribute
+
+#### use\_cls
+
+class-attribute
+instance-attribute
+
+#### use\_det
+
+class-attribute
+instance-attribute
+
+#### use\_rec
+
+class-attribute
+instance-attribute
+
+### TableFormerMode
+
+Bases: str, Enum
+
+Modes for the TableFormer model.
+
+Attributes:
+
+- ACCURATE
+          –
+- FAST
+          –
+
+#### ACCURATE
+
+class-attribute
+instance-attribute
+
+#### FAST
+
+class-attribute
+instance-attribute
+
+### TableStructureOptions
+
+Bases: BaseModel
+
+Options for the table structure.
+
+Attributes:
+
+- do\_cell\_matching
+              (bool)
+          –
+- mode
+              (TableFormerMode)
+          –
+
+#### do\_cell\_matching
+
+class-attribute
+instance-attribute
+
+#### mode
+
+class-attribute
+instance-attribute
+
+### TesseractCliOcrOptions
+
+Bases: OcrOptions
+
+Options for the TesseractCli engine.
+
+Attributes:
+
+- bitmap\_area\_threshold
+              (float)
+          –
+- force\_full\_page\_ocr
+              (bool)
+          –
+- kind
+              (Literal['tesseract'])
+          –
+- lang
+              (List[str])
+          –
+- model\_config
+          –
+- path
+              (Optional[str])
+          –
+- tesseract\_cmd
+              (str)
+          –
+
+#### bitmap\_area\_threshold
+
+class-attribute
+instance-attribute
+
+#### force\_full\_page\_ocr
+
+class-attribute
+instance-attribute
+
+#### kind
+
+class-attribute
+instance-attribute
+
+#### lang
+
+class-attribute
+instance-attribute
+
+#### model\_config
+
+class-attribute
+instance-attribute
+
+#### path
+
+class-attribute
+instance-attribute
+
+#### tesseract\_cmd
+
+class-attribute
+instance-attribute
+
+### TesseractOcrOptions
+
+Bases: OcrOptions
+
+Options for the Tesseract engine.
+
+Attributes:
+
+- bitmap\_area\_threshold
+              (float)
+          –
+- force\_full\_page\_ocr
+              (bool)
+          –
+- kind
+              (Literal['tesserocr'])
+          –
+- lang
+              (List[str])
+          –
+- model\_config
+          –
+- path
+              (Optional[str])
+          –
+
+#### bitmap\_area\_threshold
+
+class-attribute
+instance-attribute
+
+#### force\_full\_page\_ocr
+
+class-attribute
+instance-attribute
+
+#### kind
+
+class-attribute
+instance-attribute
+
+#### lang
+
+class-attribute
+instance-attribute
+
+#### model\_config
+
+class-attribute
+instance-attribute
+
+#### path
+
+class-attribute
+instance-attribute
+
+# Docling Document
+
+With Docling v2, we introduce a unified document representation format called DoclingDocument. It is defined as a
+pydantic datatype, which can express several features common to documents, such as:
+
+- Text, Tables, Pictures, and more
+- Document hierarchy with sections and groups
+- Disambiguation between main body and headers, footers (furniture)
+- Layout information (i.e. bounding boxes) for all items, if available
+- Provenance information
+
+The definition of the Pydantic types is implemented in the module docling\_core.types.doc, more details in source code definitions.
+
+It also brings a set of document construction APIs to build up a DoclingDocument from scratch.
+
+## Example document structures
+
+To illustrate the features of the DoclingDocument format, in the subsections below we consider the
+DoclingDocument converted from tests/data/word\_sample.docx and we present some side-by-side comparisons,
+where the left side shows snippets from the converted document
+serialized as YAML and the right one shows the corresponding parts of the original MS Word.
+
+### Basic structure
+
+A DoclingDocument exposes top-level fields for the document content, organized in two categories.
+The first category is the content items, which are stored in these fields:
+
+- texts: All items that have a text representation (paragraph, section heading, equation, ...). Base class is TextItem.
+- tables: All tables, type TableItem. Can carry structure annotations.
+- pictures: All pictures, type PictureItem. Can carry structure annotations.
+- key\_value\_items: All key-value items.
+
+All of the above fields are lists and store items inheriting from the DocItem type. They can express different
+data structures depending on their type, and reference parents and children through JSON pointers.
+
+The second category is content structure, which is encapsualted in:
+
+- body: The root node of a tree-structure for the main document body
+- furniture: The root node of a tree-structure for all items that don't belong into the body (headers, footers, ...)
+- groups: A set of items that don't represent content, but act as containers for other content items (e.g. a list, a chapter)
+
+All of the above fields are only storing NodeItem instances, which reference children and parents
+through JSON pointers.
+
+The reading order of the document is encapsulated through the body tree and the order of children in each item
+in the tree.
+
+Below example shows how all items in the first page are nested below the title item (#/texts/1).
+
+### Grouping
+
+Below example shows how all items under the heading "Let's swim" (#/texts/5) are nested as chilrden. The children of
+"Let's swim" are both text items and groups, which contain the list elements. The group items are stored in the
+top-level groups field.
+
+# Chunking
+
+## Introduction
+
+A chunker is a Docling abstraction that, given a
+DoclingDocument, returns a stream of chunks, each of which
+captures some part of the document as a string accompanied by respective metadata.
+
+To enable both flexibility for downstream applications and out-of-the-box utility,
+Docling defines a chunker class hierarchy, providing a base type, BaseChunker, as well
+as specific subclasses.
+
+Docling integration with gen AI frameworks like LlamaIndex is done using the
+BaseChunker interface, so users can easily plug in any built-in, self-defined, or
+third-party BaseChunker implementation.
+
+## Base Chunker
+
+The BaseChunker base class API defines that any chunker should provide the following:
+
+- def chunk(self, dl\_doc: DoclingDocument, **kwargs) -> Iterator[BaseChunk]:
+  Returning the chunks for the provided document.
+- def serialize(self, chunk: BaseChunk) -> str:
+  Returning the potentially metadata-enriched serialization of the chunk, typically
+  used to feed an embedding model (or generation model).
+
+## Hybrid Chunker
+
+To access HybridChunker
+
+- If you are using the docling package, you can import as follows:
+    from docling.chunking import HybridChunker
+- If you are only using the docling-core package, you must ensure to install
+    the chunking extra, e.g.
+    pip install 'docling-core[chunking]'
+
+    and then you
+    can import as follows:
+    from docling\_core.transforms.chunker.hybrid\_chunker import HybridChunker
+
+The HybridChunker implementation uses a hybrid approach, applying tokenization-aware
+refinements on top of document-based hierarchical chunking.
+
+More precisely:
+
+- it starts from the result of the hierarchical chunker and, based on the user-provided
+  tokenizer (typically to be aligned to the embedding model tokenizer), it:
+- does one pass where it splits chunks only when needed (i.e. oversized w.r.t.
+tokens), &
+- another pass where it merges chunks only when possible (i.e. undersized successive
+chunks with same headings & captions) — users can opt out of this step via param
+merge\_peers (by default True)
+
+👉 Example: see  here.
+
+## Hierarchical Chunker
+
+The HierarchicalChunker implementation uses the document structure information from
+the DoclingDocument to create one chunk for each individual
+detected document element, by default only merging together list items (can be opted out
+via param merge\_list\_items). It also takes care of attaching all relevant document
+metadata, including headers and captions.
+
+# Architecture
+
+In a nutshell, Docling's architecture is outlined in the diagram above.
+
+For each document format, the document converter knows which format-specific backend to employ for parsing the document and which pipeline to use for orchestrating the execution, along with any relevant options.
+
+Tip
+
+While the document converter holds a default mapping, this configuration is parametrizable, so e.g. for the PDF format, different backends and different pipeline options can be used — see Usage.
+
+The conversion result contains the Docling document, Docling's fundamental document representation.
+
+Some typical scenarios for using a Docling document include directly calling its export methods, such as for markdown, dictionary etc., or having it chunked by a chunker.
+
+For more details on Docling's architecture, check out the Docling Technical Report.
+
+Note
+
+The components illustrated with dashed outline indicate base classes that can be subclassed for specialized implementations.
+
+# OpenContracts
+
+Docling is available an ingestion engine for OpenContracts, allowing you to use Docling's OCR engine(s), chunker(s), labels, etc. and load them into a platform supporting bulk data extraction, text annotating, and question-answering:
+
+- 💻 OpenContracts GitHub
+- 📖 OpenContracts Docs
+- ▶️ OpenContracts x Docling PDF annotation screen capture
+
+# Bee Agent Framework
+
+Docling is available as an extraction backend in the Bee framework.
+
+- 💻 Bee GitHub
+- 📖 Bee docs
+- 📦 Bee NPM
+
+# DocETL
+
+Docling is available as a file conversion method in DocETL:
+
+- 💻 DocETL GitHub
+- 📖 DocETL docs
+- 📦 DocETL PyPI
+
+# Cloudera
+
+Docling is available in Cloudera through the RAG Studio
+Accelerator for Machine Learning Projects (AMP).
+
+- 💻 RAG Studio AMP GitHub
+
+# Prodigy
+
+Docling is available in Prodigy as a Prodigy-PDF plugin recipe.
+
+More details can be found in this blog post.
+
+- 🌐 Prodigy home
+- 🔌 Prodigy-PDF plugin
+- 🧑🏽‍🍳 pdf-spans.manual recipe
+
+# Crew AI
+
+Docling is available in CrewAI as the CrewDoclingSource
+knowledge source.
+
+- 💻 Crew AI GitHub
+- 📖 Crew AI knowledge docs
+- 📦 Crew AI PyPI
+
+# LangChain
+
+Docling is available as an official LangChain extension.
+
+To get started, check out the step-by-step guide in LangChain.
+
+- 📖 LangChain Docling integration docs
+- 💻 LangChain Docling integration GitHub
+- 🧑🏽‍🍳 LangChain Docling integration example
+- 📦 LangChain Docling integration PyPI
+
+# NVIDIA
+
+Docling is powering the NVIDIA PDF to Podcast agentic AI blueprint:
+
+- 🏠 PDF to Podcast home
+- 💻 PDF to Podcast GitHub
+- 📣 PDF to Podcast announcement
+- ✍️ PDF to Podcast blog post
+
+# txtai
+
+Docling is available as a text extraction backend for txtai.
+
+- 💻 txtai GitHub
+- 📖 txtai docs
+- 📖 txtai Docling backend
+
+# spaCy
+
+Docling is available in spaCy as the spaCy Layout plugin.
+
+More details can be found in this blog post.
+
+- 💻 SpacyLayout GitHub
+- 📖 SpacyLayout docs
+- 📦 SpacyLayout PyPI
+
+# Data Prep Kit
+
+Docling is used by the Data Prep Kit open-source toolkit for preparing unstructured data for LLM application development ranging from laptop scale to datacenter scale.
+
+## Components
+
+### PDF ingestion to Parquet
+
+- 💻 PDF-to-Parquet GitHub
+- 📖 PDF-to-Parquet docs
+
+### Document chunking
+
+- 💻 Doc Chunking GitHub
+- 📖 Doc Chunking docs
+
+# LlamaIndex
+
+Docling is available as an official LlamaIndex extension.
+
+To get started, check out the step-by-step guide in LlamaIndex.
+
+## Components
+
+### Docling Reader
+
+Reads document files and uses Docling to populate LlamaIndex Document objects — either serializing Docling's data model (losslessly, e.g. as JSON) or exporting to a simplified format (lossily, e.g. as Markdown).
+
+- 💻 Docling Reader GitHub
+- 📖 Docling Reader docs
+- 📦 Docling Reader PyPI
+
+### Docling Node Parser
+
+Reads LlamaIndex Document objects populated in Docling's format by Docling Reader and, using its knowledge of the Docling format, parses them to LlamaIndex Node objects for downstream usage in LlamaIndex applications, e.g. as chunks for embedding.
+
+- 💻 Docling Node Parser GitHub
+- 📖 Docling Node Parser docs
+- 📦 Docling Node Parser PyPI
+
+# InstructLab
+
+Docling is powering document processing in InstructLab,
+enabling users to unlock the knowledge hidden in documents and present it to
+InstructLab's fine-tuning for aligning AI models to the user's specific data.
+
+More details can be found in this blog post.
+
+- 🏠 InstructLab home
+- 💻 InstructLab GitHub
+- 🧑🏻‍💻 InstructLab UI
+- 📖 InstructLab docs
+
+# RHEL AI
+
+Docling is powering document processing in Red Hat Enterprise Linux AI (RHEL AI),
+enabling users to unlock the knowledge hidden in documents and present it to
+InstructLab's fine-tuning for aligning AI models to the user's specific data.
+
+- 📣 RHEL AI 1.3 announcement
+- ✍️ RHEL blog posts:
+    - RHEL AI 1.3 Docling context aware chunking: What you need to know
+    - Docling: The missing document processing companion for generative AI
+
+# Kotaemon
+
+Docling is available in Kotaemon as the DoclingReader loader:
+
+- 💻 Kotaemon GitHub
+- 📖 DoclingReader docs
+- ⚙️ Docling setup in Kotaemon
+
+# Haystack
+
+Docling is available as a converter in Haystack:
+
+- 📖 Docling Haystack integration docs
+- 💻 Docling Haystack integration GitHub
+- 🧑🏽‍🍳 Docling Haystack integration example
+- 📦 Docling Haystack integration PyPI
+
+# Vectara
+
+Docling is available as a document parser in Vectara.
+
+- 💻 Vectara GitHub org
+    - vectara-ingest GitHub repo
+- 📖 Vectara docs
+
+# Automatic OCR language detection with tesseract
+
+# Multimodal export
+
+# Figure enrichment
+
+# Simple conversion
+
+# Accelerator options
+
+# Batch conversion
+
+# Simple translation
+
+# Table export
+
+# Run md
+
+# Retrieval with Qdrant¶
+
+| Step         | Tech      | Execution   |
+|--------------|-----------|-------------|
+| Embedding    | FastEmbed | 💻 Local     |
+| Vector store | Qdrant    | 💻 Local     |
+
+## Overview¶
+
+This example demonstrates using Docling with Qdrant to perform a hybrid search across your documents using dense and sparse vectors.
+
+We'll chunk the documents using Docling before adding them to a Qdrant collection. By limiting the length of the chunks, we can preserve the meaning in each vector embedding.
+
+## Setup¶
+
+- 👉 Qdrant client uses FastEmbed to generate vector embeddings. You can install the fastembed-gpu package if you've got the hardware to support it.
+
+Let's import all the classes we'll be working with.
+
+- For Docling, we'll set the  allowed formats to HTML since we'll only be working with webpages in this tutorial.
+- If we set a sparse model, Qdrant client will fuse the dense and sparse results using RRF. Reference.
+
+We can now download and chunk the document using Docling. For demonstration, we'll use an article about chunking strategies :)
+
+Let's now upload the documents to Qdrant.
+
+- The add() method batches the documents and uses FastEmbed to generate vector embeddings on our machine.
+
+## Retrieval¶
+
+# Figure export
+
+# Custom conversion
+
+# Multi-format conversion
+
+# RAG with Weaviate¶
+
+| Step         | Tech      | Execution   |
+|--------------|-----------|-------------|
+| Embedding    | Open AI   | 🌐 Remote    |
+| Vector store | Weavieate | 💻 Local     |
+| Gen AI       | Open AI   | 🌐 Remote    |
+
+## A recipe 🧑‍🍳 🐥 💚¶
+
+This is a code recipe that uses Weaviate to perform RAG over PDF documents parsed by Docling.
+
+In this notebook, we accomplish the following:
+
+- Parse the top machine learning papers on arXiv using Docling
+- Perform hierarchical chunking of the documents using Docling
+- Generate text embeddings with OpenAI
+- Perform RAG using Weaviate
+
+To run this notebook, you'll need:
+
+- An OpenAI API key
+- Access to GPU/s
+
+Note: For best results, please use GPU acceleration to run this notebook. Here are two options for running this notebook:
+
+1. Locally on a MacBook with an Apple Silicon chip. Converting all documents in the notebook takes ~2 minutes on a MacBook M2 due to Docling's usage of MPS accelerators.
+2. Run this notebook on Google Colab. Converting all documents in the notebook takes ~8 mintutes on a Google Colab T4 GPU.
+
+### Install Docling and Weaviate client¶
+
+Note: If Colab prompts you to restart the session after running the cell below, click "restart" and proceed with running the rest of the notebook.
+
+## 🐥 Part 1: Docling¶
+
+Part of what makes Docling so remarkable is the fact that it can run on commodity hardware. This means that this notebook can be run on a local machine with GPU acceleration. If you're using a MacBook with a silicon chip, Docling integrates seamlessly with Metal Performance Shaders (MPS). MPS provides out-of-the-box GPU acceleration for macOS, seamlessly integrating with PyTorch and TensorFlow, offering energy-efficient performance on Apple Silicon, and broad compatibility with all Metal-supported GPUs.
+
+The code below checks to see if a GPU is available, either via CUDA or MPS.
+
+Here, we've collected 10 influential machine learning papers published as PDFs on arXiv. Because Docling does not yet have title extraction for PDFs, we manually add the titles in a corresponding list.
+
+Note: Converting all 10 papers should take around 8 minutes with a T4 GPU.
+
+### Convert PDFs to Docling documents¶
+
+Here we use Docling's .convert\_all() to parse a batch of PDFs. The result is a list of Docling documents that we can use for text extraction.
+
+Note: Please ignore the ERR# message.
+
+### Post-process extracted document data¶
+
+#### Perform hierarchical chunking on documents¶
+
+We use Docling's HierarchicalChunker() to perform hierarchy-aware chunking of our list of documents. This is meant to preserve some of the structure and relationships within the document, which enables more accurate and relevant retrieval in our RAG pipeline.
+
+Because we're splitting the documents into chunks, we'll concatenate the article title to the beginning of each chunk for additional context.
+
+## 💚 Part 2: Weaviate¶
+
+### Create and configure an embedded Weaviate collection¶
+
+We'll be using the OpenAI API for both generating the text embeddings and for the generative model in our RAG pipeline. The code below dynamically fetches your API key based on whether you're running this notebook in Google Colab and running it as a regular Jupyter notebook. All you need to do is replace openai\_api\_key\_var with the name of your environmental variable name or Colab secret name for the API key.
+
+If you're running this notebook in Google Colab, make sure you add your API key as a secret.
+
+Embedded Weaviate allows you to spin up a Weaviate instance directly from your application code, without having to use a Docker container. If you're interested in other deployment methods, like using Docker-Compose or Kubernetes, check out this page in the Weaviate docs.
+
+### Wrangle data into an acceptable format for Weaviate¶
+
+Transform our data from lists to a list of dictionaries for insertion into our Weaviate collection.
+
+### Insert data into Weaviate and generate embeddings¶
+
+Embeddings will be generated upon insertion to our Weaviate collection.
+
+### Query the data¶
+
+Here, we perform a simple similarity search to return the most similar embedded chunks to our search query.
+
+### Perform RAG on parsed articles¶
+
+Weaviate's generate module allows you to perform RAG over your embedded data without having to use a separate framework.
+
+We specify a prompt that includes the field we want to search through in the database (in this case it's text), a query that includes our search term, and the number of retrieved results to use in the generation.
+
+We can see that our RAG pipeline performs relatively well for simple queries, especially given the small size of the dataset. Scaling this method for converting a larger sample of PDFs would require more compute (GPUs) and a more advanced deployment of Weaviate (like Docker, Kubernetes, or Weaviate Cloud). For more information on available Weaviate configurations, check out the documetation.
+
+# Hybrid chunking¶
+
+## Overview¶
+
+Hybrid chunking applies tokenization-aware refinements on top of document-based hierarchical chunking.
+
+For more details, see here.
+
+## Setup¶
+
+## Conversion¶
+
+## Chunking¶
+
+### Basic usage¶
+
+For a basic usage scenario, we can just instantiate a HybridChunker, which will use
+the default parameters.
+
+Note that the text you would typically want to embed is the context-enriched one as
+returned by the serialize() method:
+
+### Advanced usage¶
+
+For more control on the chunking, we can parametrize through the HybridChunker
+arguments illustrated below.
+
+Notice how tokenizer and embed\_model further below are single-sourced from
+EMBED\_MODEL\_ID.
+This is important for making sure the chunker and the embedding model are using the same
+tokenizer.
+
+Points to notice looking at the output chunks below:
+
+- Where possible, we fit the limit of 64 tokens for the metadata-enriched serialization form (see chunk 2)
+- Where neeeded, we stop before the limit, e.g. see cases of 63 as it would otherwise run into a comma (see chunk 6)
+- Where possible, we merge undersized peer chunks (see chunk 0)
+- "Tail" chunks trailing right after merges may still be undersized (see chunk 8)
+
+# RAG with Haystack¶
+
+| Step         | Tech                                 | Execution   |
+|--------------|--------------------------------------|-------------|
+| Embedding    | Hugging Face / Sentence Transformers | 💻 Local     |
+| Vector store | Milvus                               | 💻 Local     |
+| Gen AI       | Hugging Face Inference API           | 🌐 Remote    |
+
+## Overview¶
+
+This example leverages the
+Haystack Docling extension, along with
+Milvus-based document store and retriever instances, as well as sentence-transformers
+embeddings.
+
+The presented DoclingConverter component enables you to:
+
+- use various document types in your LLM applications with ease and speed, and
+- leverage Docling's rich format for advanced, document-native grounding.
+
+DoclingConverter supports two different export modes:
+
+- ExportType.MARKDOWN: if you want to capture each input document as a separate
+Haystack document, or
+- ExportType.DOC\_CHUNKS (default): if you want to have each input document chunked and
+to then capture each individual chunk as a separate Haystack document downstream.
+
+The example allows to explore both modes via parameter EXPORT\_TYPE; depending on the
+value set, the ingestion and RAG pipelines are then set up accordingly.
+
+## Setup¶
+
+- 👉 For best conversion speed, use GPU acceleration whenever available; e.g. if running on Colab, use GPU-enabled runtime.
+- Notebook uses HuggingFace's Inference API; for increased LLM quota, token can be provided via env var HF\_TOKEN.
+- Requirements can be installed as shown below (--no-warn-conflicts meant for Colab's pre-populated Python env; feel free to remove for stricter usage):
+
+## Indexing pipeline¶
+
+## RAG pipeline¶
+
+Below we print out the RAG results. If you have used ExportType.DOC\_CHUNKS, notice how
+the sources contain document-level grounding (e.g. page number or bounding box
+information):
+
+# RAG with LlamaIndex¶
+
+| Step         | Tech                                 | Execution   |
+|--------------|--------------------------------------|-------------|
+| Embedding    | Hugging Face / Sentence Transformers | 💻 Local     |
+| Vector store | Milvus                               | 💻 Local     |
+| Gen AI       | Hugging Face Inference API           | 🌐 Remote    |
+
+## Overview¶
+
+This example leverages the official LlamaIndex Docling extension.
+
+Presented extensions DoclingReader and DoclingNodeParser enable you to:
+
+- use various document types in your LLM applications with ease and speed, and
+- leverage Docling's rich format for advanced, document-native grounding.
+
+## Setup¶
+
+- 👉 For best conversion speed, use GPU acceleration whenever available; e.g. if running on Colab, use GPU-enabled runtime.
+- Notebook uses HuggingFace's Inference API; for increased LLM quota, token can be provided via env var HF\_TOKEN.
+- Requirements can be installed as shown below (--no-warn-conflicts meant for Colab's pre-populated Python env; feel free to remove for stricter usage):
+
+We can now define the main parameters:
+
+## Using Markdown export¶
+
+To create a simple RAG pipeline, we can:
+
+- define a DoclingReader, which by default exports to Markdown, and
+- use a standard node parser for these Markdown-based docs, e.g. a MarkdownNodeParser
+
+## Using Docling format¶
+
+To leverage Docling's rich native format, we:
+
+- create a DoclingReader with JSON export type, and
+- employ a DoclingNodeParser in order to appropriately parse that Docling format.
+
+Notice how the sources now also contain document-level grounding (e.g. page number or bounding box information):
+
+## With Simple Directory Reader¶
+
+To demonstrate this usage pattern, we first set up a test document directory.
+
+Using the reader and node\_parser definitions from any of the above variants, usage with SimpleDirectoryReader then looks as follows:
+
+# Conversion of custom XML¶
+
+| Step         | Tech                                 | Execution   |
+|--------------|--------------------------------------|-------------|
+| Embedding    | Hugging Face / Sentence Transformers | 💻 Local     |
+| Vector store | Milvus                               | 💻 Local     |
+| Gen AI       | Hugging Face Inference API           | 🌐 Remote    |
+
+## Overview¶
+
+This is an example of using Docling for converting structured data (XML) into a unified document
+representation format, DoclingDocument, and leverage its riched structured content for RAG applications.
+
+Data used in this example consist of patents from the United States Patent and Trademark Office (USPTO) and medical
+articles from PubMed Central® (PMC).
+
+In this notebook, we accomplish the following:
+
+- Simple conversion of supported XML files in a nutshell
+- An end-to-end application using public collections of XML files supported by Docling
+    - Setup the API access for generative AI
+    - Fetch the data from USPTO and PubMed Central® sites, using Docling custom backends
+    - Parse, chunk, and index the documents in a vector database
+    - Perform RAG using LlamaIndex Docling extension
+
+For more details on document chunking with Docling, refer to the Chunking documentation. For RAG with Docling and LlamaIndex, also check the example RAG with LlamaIndex.
+
+## Simple conversion¶
+
+The XML file format defines and stores data in a format that is both human-readable and machine-readable.
+Because of this flexibility, Docling requires custom backend processors to interpret XML definitions and convert them into DoclingDocument objects.
+
+Some public data collections in XML format are already supported by Docling (USTPO patents and PMC articles). In these cases, the document conversion is straightforward and the same as with any other supported format, such as PDF or HTML. The execution example in Simple Conversion is the recommended usage of Docling for a single file:
+
+Once the document is converted, it can be exported to any format supported by Docling. For instance, to markdown (showing here the first lines only):
+
+If the XML file is not supported, a ConversionError message will be raised.
+
+You can always refer to the Usage documentation page for a list of supported formats.
+
+## End-to-end application¶
+
+This section describes a step-by-step application for processing XML files from supported public collections and use them for question-answering.
+
+### Setup¶
+
+Requirements can be installed as shown below. The --no-warn-conflicts argument is meant for Colab's pre-populated Python environment, feel free to remove for stricter usage.
+
+This notebook uses HuggingFace's Inference API. For an increased LLM quota, a token can be provided via the environment variable HF\_TOKEN.
+
+If you're running this notebook in Google Colab, make sure you add your API key as a secret.
+
+We can now define the main parameters:
+
+### Fetch the data¶
+
+In this notebook we will use XML data from collections supported by Docling:
+
+- Medical articles from the PubMed Central® (PMC). They are available in an FTP server as .tar.gz files. Each file contains the full article data in XML format, among other supplementary files like images or spreadsheets.
+- Patents from the United States Patent and Trademark Office. They are available in the Bulk Data Storage System (BDSS) as zip files. Each zip file may contain several patents in XML format.
+
+The raw files will be downloaded form the source and saved in a temporary directory.
+
+#### PMC articles¶
+
+The OA file is a manifest file of all the PMC articles, including the URL path to download the source files. In this notebook we will use as example the article Pathogens spread by high-altitude windborne mosquitoes, which is available in the archive file PMC11703268.tar.gz.
+
+#### USPTO patents¶
+
+Since each USPTO file is a concatenation of several patents, we need to split its content into valid XML pieces. The following code downloads a sample zip file, split its content in sections, and dumps each section as an XML file. For simplicity, this pipeline is shown here in a sequential manner, but it could be parallelized.
+
+### Using the backend converter (optional)¶
+
+- The custom backend converters PubMedDocumentBackend and PatentUsptoDocumentBackend aim at handling the parsing of PMC articles and USPTO patents, respectively.
+- As any other backends, you can leverage the function is\_valid() to check if the input document is supported by the this backend.
+- Note that some XML sections in the original USPTO zip file may not represent patents, like sequence listings, and therefore they will show as invalid by the backend.
+
+Calling the function convert() will convert the input document into a DoclingDocument
+
+✏️ Tip: in general, there is no need to use the backend converters to parse USPTO or PubMed XML files. The generic DocumentConverter object tries to guess the input document format and applies the corresponding backend parser. The conversion shown in Simple Conversion is the recommended usage for the supported XML files.
+
+### Parse, chunk, and index¶
+
+The DoclingDocument format of the converted patents has a rich hierarchical structure, inherited from the original XML document and preserved by the Docling custom backend.
+In this notebook, we will leverage:
+
+- The SimpleDirectoryReader pattern to iterate over the exported XML files created in section Fetch the data.
+- The LlamaIndex extensions, DoclingReader and DoclingNodeParser, to ingest the patent chunks into a Milvus vectore store.
+- The HierarchicalChunker implementation, which applies a document-based hierarchical chunking, to leverage the patent structures like sections and paragraphs within sections.
+
+Refer to other possible implementations and usage patterns in the Chunking documentation and the RAG with LlamaIndex notebook.
+
+##### Set the Docling reader and the directory reader¶
+
+Note that DoclingReader uses Docling's DocumentConverter by default and therefore it will recognize the format of the XML files and leverage the PatentUsptoDocumentBackend automatically.
+
+For demonstration purposes, we limit the scope of the analysis to the first 100 patents.
+
+##### Set the node parser¶
+
+Note that the HierarchicalChunker is the default chunking implementation of the DoclingNodeParser.
+
+##### Set a local Milvus database and run the ingestion¶
+
+Finally, add the PMC article to the vector store directly from the reader.
+
+### Question-answering with RAG¶
+
+The retriever can be used to identify highly relevant documents:
+
+With the query engine, we can run the question-answering with the RAG pattern on the set of indexed documents.
+
+First, we can prompt the LLM directly:
+
+Now, we can compare the response when the model is prompted with the indexed PMC article as supporting context:
+
+# Develop formula understanding
+
+# RAG with Azure AI Search¶
+
+| Step         | Tech            | Execution   |
+|--------------|-----------------|-------------|
+| Embedding    | Azure OpenAI    | 🌐 Remote    |
+| Vector Store | Azure AI Search | 🌐 Remote    |
+| Gen AI       | Azure OpenAI    | 🌐 Remote    |
+
+## A recipe 🧑‍🍳 🐥 💚¶
+
+This notebook demonstrates how to build a Retrieval-Augmented Generation (RAG) system using:
+
+- Docling for document parsing and chunking
+- Azure AI Search for vector indexing and retrieval
+- Azure OpenAI for embeddings and chat completion
+
+This sample demonstrates how to:
+
+1. Parse a PDF with Docling.
+2. Chunk the parsed text.
+3. Use Azure OpenAI for embeddings.
+4. Index and search in Azure AI Search.
+5. Run a retrieval-augmented generation (RAG) query with Azure OpenAI GPT-4o.
+
+### Part 0: Prerequisites¶
+
+- Azure AI Search resource
+- Azure OpenAI resource with a deployed embedding and chat completion model (e.g. text-embedding-3-small and gpt-4o)
+- Docling 2.12+ (installs docling\_core automatically)  Docling installed (Python 3.8+ environment)
+- A GPU-enabled environment is preferred for faster parsing. Docling 2.12 automatically detects GPU if present.
+
+A GPU-enabled environment is preferred for faster parsing. Docling 2.12 automatically detects GPU if present.
+
+    - If you only have CPU, parsing large PDFs can be slower.
+
+### Part 1: Parse the PDF with Docling¶
+
+We’ll parse the Microsoft GraphRAG Research Paper (~15 pages). Parsing should be relatively quick, even on CPU, but it will be faster on a GPU or MPS device if available.
+
+(If you prefer a different document, simply provide a different URL or local file path.)
+
+### Part 2: Hierarchical Chunking¶
+
+We convert the Document into smaller chunks for embedding and indexing. The built-in HierarchicalChunker preserves structure.
+
+### Part 3: Create Azure AI Search Index and Push Chunk Embeddings¶
+
+We’ll define a vector index in Azure AI Search, then embed each chunk using Azure OpenAI and upload in batches.
+
+#### Generate Embeddings and Upload to Azure AI Search¶
+
+### Part 4: Perform RAG over PDF¶
+
+Combine retrieval from Azure AI Search with Azure OpenAI Chat Completions (aka. grounding your LLM)
+
+# Force full page OCR
+
+# RAG with LangChain¶
+
+| Step         | Tech                                 | Execution   |
+|--------------|--------------------------------------|-------------|
+| Embedding    | Hugging Face / Sentence Transformers | 💻 Local     |
+| Vector store | Milvus                               | 💻 Local     |
+| Gen AI       | Hugging Face Inference API           | 🌐 Remote    |
+
+This example leverages the
+LangChain Docling integration, along with a Milvus
+vector store, as well as sentence-transformers embeddings.
+
+The presented DoclingLoader component enables you to:
+
+- use various document types in your LLM applications with ease and speed, and
+- leverage Docling's rich format for advanced, document-native grounding.
+
+DoclingLoader supports two different export modes:
+
+- ExportType.MARKDOWN: if you want to capture each input document as a separate
+LangChain document, or
+- ExportType.DOC\_CHUNKS (default): if you want to have each input document chunked and
+to then capture each individual chunk as a separate LangChain document downstream.
+
+The example allows exploring both modes via parameter EXPORT\_TYPE; depending on the
+value set, the example pipeline is then set up accordingly.
+
+## Setup¶
+
+- 👉 For best conversion speed, use GPU acceleration whenever available; e.g. if running on Colab, use GPU-enabled runtime.
+- Notebook uses HuggingFace's Inference API; for increased LLM quota, token can be provided via env var HF\_TOKEN.
+- Requirements can be installed as shown below (--no-warn-conflicts meant for Colab's pre-populated Python env; feel free to remove for stricter usage):
+
+## Document loading¶
+
+Now we can instantiate our loader and load documents.
+
+Note: a message saying "Token indices sequence length is longer than the specified maximum sequence length..." can be ignored in this case — details
+here.
+
+Determining the splits:
+
+Inspecting some sample splits:
+
+## Ingestion¶
+
+## RAG¶
+

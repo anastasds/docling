@@ -1,0 +1,1 @@
+# Automatic OCR language detection with tesseract

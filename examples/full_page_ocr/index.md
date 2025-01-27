@@ -1,0 +1,1 @@
+# Force full page OCR
